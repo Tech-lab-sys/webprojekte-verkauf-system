@@ -214,12 +214,12 @@ install_nginx() {
     
     if [ "$IS_ROOT" = true ]; then
         apt install -y nginx certbot python3-certbot-nginx > /dev/null 2>&1
-        systemctl start nginx
-        systemctl enable nginx
+        systemctl start nginx || true
+        systemctl enable nginx || true
     else
         sudo apt install -y nginx certbot python3-certbot-nginx > /dev/null 2>&1
-        sudo systemctl start nginx
-        sudo systemctl enable nginx
+        sudo systemctl start nginx || true
+        sudo systemctl enable nginx || true
     fi
     
     log_success "Nginx installiert"
