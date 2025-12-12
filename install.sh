@@ -253,7 +253,7 @@ main() {
     install_nodejs
     install_postgresql
     setup_database
-    install_pm2
+        install_pm2
     install_nginx
     clone_application
     install_dependencies
