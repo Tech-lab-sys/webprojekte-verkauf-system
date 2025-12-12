@@ -447,9 +447,9 @@ EOF"
 # Abschluss-Informationen
 print_summary() {
     echo ""
-    cat << EOF${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
-${GREEN}═══════════════════════════════════════════════════════════════════${NC}
-
+    cat << SUMMARY
+    ${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
+    ${GREEN}═════════════════════════════════════════════════════════════════${NC}
 ${BLUE}📋 Installierte Komponenten:${NC}
   ✓ Node.js $(node -v)
   ✓ PostgreSQL
@@ -480,9 +480,7 @@ ${YELLOW}⚠️  Wichtig:${NC}
   3. SSL-Zertifikat kann jederzeit mit Certbot erneuert werden
 
 ${GREEN}Viel Erfolg mit deinem Webprojekte-Verkaufs-System! 🚀${NC}
-EOF
-}
-
+SUMMARY
 # Main Installation
 main() {
     log_info "Starte Smart Installer..."
