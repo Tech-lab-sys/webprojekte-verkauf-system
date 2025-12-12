@@ -190,6 +190,7 @@ server {
     }
 }
 NGINX
+NGINX
     ${IS_ROOT} && sed -i "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" "$CONFIG" || sudo sed -i "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" "$CONFIG"
     ${IS_ROOT} && ln -sf "$CONFIG" /etc/nginx/sites-enabled/ && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx || sudo ln -sf "$CONFIG" /etc/nginx/sites-enabled/ && sudo rm -f /etc/nginx/sites-enabled/default && sudo nginx -t && sudo systemctl reload nginx
     log_success "Nginx konfiguriert"
