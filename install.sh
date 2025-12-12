@@ -481,6 +481,7 @@ ${YELLOW}⚠️  Wichtig:${NC}
 
 ${GREEN}Viel Erfolg mit deinem Webprojekte-Verkaufs-System! 🚀${NC}
 SUMMARY
+}
 # Main Installation
 main() {
     log_info "Starte Smart Installer..."
