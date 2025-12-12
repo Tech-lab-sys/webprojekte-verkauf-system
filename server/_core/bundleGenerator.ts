@@ -22,17 +22,17 @@ interface BundleConfig {
  */
 export async function generateWordPressBundle(config: BundleConfig): Promise<string> {
   const { websiteId, type, niche, plugins = [], theme = 'default' } = config;
-  
+
   // Erstelle Output Verzeichnis falls nicht vorhanden
   await fs.ensureDir(OUTPUT_DIR);
-  
+
   const zip = new AdmZip();
   const bundleName = `wordpress-${type.toLowerCase()}-${Date.now()}.zip`;
-  const bundlePath = path.join(OUTPUT_DIR, bundleName);
+  const outputPath = path.join(OUTPUT_DIR, bundleName);
 
   try {
-    // 1. WordPress Core Dateien hinzufügen (aus Template)
-    const wpCorePath = path.join(TEMPLATE_DIR, 'wordpress-core');
+    // 1. WordPress Core Dateien hinzufügen
+    const wpCorePath = path.join(TEMPLATE_DIR, 'wordpress');
     if (await fs.pathExists(wpCorePath)) {
       zip.addLocalFolder(wpCorePath, 'wordpress');
     }
@@ -51,98 +51,113 @@ export async function generateWordPressBundle(config: BundleConfig): Promise<str
       }
     }
 
-    // 4. Affiliate XML Inhalte generieren basierend auf Typ
-    const xmlContent = await generateAffiliateXML(type, niche, websiteId);
-    zip.addFile('wordpress/wp-content/uploads/affiliate-products.xml', Buffer.from(xmlContent, 'utf-8'));
+    // 4. Typ-spezifische Inhalte
+    if (type === 'AFFILIATE') {
+      await addAffiliateContent(zip, niche);
+    } else if (type === 'AI_BLOG') {
+      await addAIBlogContent(zip, niche);
+    } else if (type === 'BUSINESS') {
+      await addBusinessContent(zip, niche);
+    }
 
-    // 5. wp-config.php mit Platzhaltern erstellen
-    const wpConfigContent = generateWPConfig();
-    zip.addFile('wordpress/wp-config.php', Buffer.from(wpConfigContent, 'utf-8'));
+    // 5. Konfigurationsdateien
+    await addConfigFiles(zip, config);
 
-    // 6. Installation Anleitung hinzufügen
-    const installGuide = generateInstallGuide(type, niche);
-    zip.addFile('INSTALLATION.md', Buffer.from(installGuide, 'utf-8'));
+    // 6. Dokumentation
+    await addDocumentation(zip, type);
 
-    // 7. SQL Import Datei mit vordefinierten Einstellungen
-    const sqlContent = await generateSQLImport(type, niche);
-    zip.addFile('wordpress/import.sql', Buffer.from(sqlContent, 'utf-8'));
+    // 7. SQL Import Datei
+    await addDatabaseImport(zip, config);
 
-    // ZIP speichern
-    zip.writeZip(bundlePath);
+    // Bundle speichern
+    await zip.writeZipPromise(outputPath);
 
-    // Bundle Info in Datenbank speichern
+    // In Datenbank speichern
     await prisma.website.update({
       where: { id: websiteId },
-      data: {
-        bundlePath: bundlePath,
-        bundleGenerated: true,
-        bundleGeneratedAt: new Date(),
-      },
+      data: { bundlePath: outputPath }
     });
 
-    return bundlePath;
+    console.log(`✅ Bundle erstellt: ${bundleName}`);
+    return outputPath;
+
   } catch (error) {
-    console.error('Fehler beim Bundle erstellen:', error);
-    throw new Error(`Bundle Generierung fehlgeschlagen: ${error.message}`);
+    console.error('❌ Bundle Generierung fehlgeschlagen:', error);
+    throw new Error(`Bundle generation failed: ${error}`);
   }
 }
 
 /**
- * Generiert Affiliate XML mit Produkten basierend auf Nische
+ * Fügt Affiliate-spezifische Inhalte hinzu
  */
-async function generateAffiliateXML(type: WebsiteType, niche: string, websiteId: string): Promise<string> {
-  // Hole Website Daten aus DB für Affiliate Links
-  const website = await prisma.website.findUnique({
-    where: { id: websiteId },
-  });
+async function addAffiliateContent(zip: AdmZip, niche: string): Promise<void> {
+  const affiliateXMLPath = path.join(TEMPLATE_DIR, 'affiliate', `${niche}.xml`);
+  
+  if (await fs.pathExists(affiliateXMLPath)) {
+    const xmlContent = await fs.readFile(affiliateXMLPath);
+    zip.addFile('wordpress/wp-content/uploads/affiliate-products.xml', xmlContent);
+  }
 
-  const products = [
-    // Beispiel Produkte - In Produktion würden diese aus einer API/DB kommen
-    {
-      id: 1,
-      title: `Premium ${niche} Produkt 1`,
-      description: `Hochwertiges Produkt für ${niche} Bereich`,
-      price: '49.99',
-      affiliateLink: website?.affiliateLinks?.[0] || 'https://example.com/aff',
-      image: 'https://via.placeholder.com/400x300',
-    },
-    {
-      id: 2,
-      title: `Top ${niche} Lösung`,
-      description: `Beste Wahl für ${niche} Enthusiasten`,
-      price: '79.99',
-      affiliateLink: website?.affiliateLinks?.[1] || 'https://example.com/aff2',
-      image: 'https://via.placeholder.com/400x300',
-    },
-  ];
-
-  // WooCommerce XML Format
-  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">\n';
-  xml += '<channel>\n';
-  xml += `<title>Affiliate Produkte - ${niche}</title>\n`;
-  
-  products.forEach(product => {
-    xml += '  <item>\n';
-    xml += `    <title><![CDATA[${product.title}]]></title>\n`;
-    xml += `    <description><![CDATA[${product.description}]]></description>\n`;
-    xml += `    <price>${product.price}</price>\n`;
-    xml += `    <link>${product.affiliateLink}</link>\n`;
-    xml += `    <image>${product.image}</image>\n`;
-    xml += '  </item>\n';
-  });
-  
-  xml += '</channel>\n';
-  xml += '</rss>';
-  
-  return xml;
+  // AAWP Plugin Settings
+  const aawpSettings = {
+    api_key: 'YOUR_AMAZON_API_KEY',
+    partner_id: 'YOUR_PARTNER_ID',
+    shop: 'amazon.de'
+  };
+  zip.addFile('aawp-settings.json', Buffer.from(JSON.stringify(aawpSettings, null, 2)));
 }
 
 /**
- * Generiert wp-config.php mit Platzhaltern
+ * Fügt AI Blog spezifische Inhalte hinzu
  */
-function generateWPConfig(): string {
-  return `<?php
+async function addAIBlogContent(zip: AdmZip, niche: string): Promise<void> {
+  // AI Blog Starter Posts
+  const blogPostsPath = path.join(TEMPLATE_DIR, 'blog-posts', niche);
+  
+  if (await fs.pathExists(blogPostsPath)) {
+    const posts = await fs.readdir(blogPostsPath);
+    for (const post of posts) {
+      const postContent = await fs.readFile(path.join(blogPostsPath, post));
+      zip.addFile(`wordpress/wp-content/blog-posts/${post}`, postContent);
+    }
+  }
+
+  // AI Blog Konfiguration
+  const aiConfig = {
+    auto_posting: true,
+    frequency: 'daily',
+    categories: [niche],
+    seo_optimization: true
+  };
+  zip.addFile('ai-blog-config.json', Buffer.from(JSON.stringify(aiConfig, null, 2)));
+}
+
+/**
+ * Fügt Business Website Inhalte hinzu
+ */
+async function addBusinessContent(zip: AdmZip, niche: string): Promise<void> {
+  // Business Template Pages
+  const pagesPath = path.join(TEMPLATE_DIR, 'business-pages', niche);
+  
+  if (await fs.pathExists(pagesPath)) {
+    zip.addLocalFolder(pagesPath, 'wordpress/wp-content/business-pages');
+  }
+
+  // Contact Form & CRM Integration
+  const crmConfig = {
+    enable_contact_form: true,
+    email_notifications: true,
+    crm_integration: 'none'
+  };
+  zip.addFile('crm-config.json', Buffer.from(JSON.stringify(crmConfig, null, 2)));
+}
+
+/**
+ * Fügt Konfigurationsdateien hinzu
+ */
+async function addConfigFiles(zip: AdmZip, config: BundleConfig): Promise<void> {
+  // wp-config.php Template
+  const wpConfigTemplate = `<?php
 define('DB_NAME', 'your_database_name');
 define('DB_USER', 'your_database_user');
 define('DB_PASSWORD', 'your_database_password');
@@ -150,30 +165,42 @@ define('DB_HOST', 'localhost');
 define('DB_CHARSET', 'utf8mb4');
 define('DB_COLLATE', '');
 
-define('AUTH_KEY',         'CHANGE_THIS_' + Math.random());
-define('SECURE_AUTH_KEY',  'CHANGE_THIS_' + Math.random());
-define('LOGGED_IN_KEY',    'CHANGE_THIS_' + Math.random());
-define('NONCE_KEY',        'CHANGE_THIS_' + Math.random());
-define('AUTH_SALT',        'CHANGE_THIS_' + Math.random());
-define('SECURE_AUTH_SALT', 'CHANGE_THIS_' + Math.random());
-define('LOGGED_IN_SALT',   'CHANGE_THIS_' + Math.random());
-define('NONCE_SALT',       'CHANGE_THIS_' + Math.random());
+// Salts generieren auf: https://api.wordpress.org/secret-key/1.1/salt/
+define('AUTH_KEY',         'put your unique phrase here');
+define('SECURE_AUTH_KEY',  'put your unique phrase here');
+define('LOGGED_IN_KEY',    'put your unique phrase here');
+define('NONCE_KEY',        'put your unique phrase here');
 
 $table_prefix = 'wp_';
 define('WP_DEBUG', false);
 
-if ( !defined('ABSPATH') )
-  define('ABSPATH', dirname(__FILE__) . '/');
-
-require_once(ABSPATH . 'wp-settings.php');
+if ( ! defined( 'ABSPATH' ) ) {
+  define( 'ABSPATH', __DIR__ . '/' );
+}
+require_once ABSPATH . 'wp-settings.php';
 ?>`;
+
+  zip.addFile('wordpress/wp-config.php', Buffer.from(wpConfigTemplate));
+
+  // .htaccess für Pretty URLs
+  const htaccessContent = `# BEGIN WordPress
+RewriteEngine On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteBase /
+RewriteRule ^index\\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+# END WordPress`;
+
+  zip.addFile('wordpress/.htaccess', Buffer.from(htaccessContent));
 }
 
 /**
- * Generiert Installations-Anleitung
+ * Fügt Dokumentation hinzu
  */
-function generateInstallGuide(type: WebsiteType, niche: string): string {
-  return `# WordPress ${type} Bundle - ${niche}
+async function addDocumentation(zip: AdmZip, type: WebsiteType): Promise<void> {
+  const installGuide = `# WordPress ${type} Bundle - Installation
 
 ## Installation
 
@@ -188,10 +215,10 @@ function generateInstallGuide(type: WebsiteType, niche: string): string {
    - Öffnen Sie wordpress/wp-config.php
    - Tragen Sie Ihre Datenbank Zugangsdaten ein
 
-4. **Affiliate Links konfigurieren**
+4. **Affiliate Links konfigurieren** ${type === 'AFFILIATE' ? `
    - Navigieren Sie zu WordPress Admin
    - Gehen Sie zu Tools > Import
-   - Importieren Sie die Datei wp-content/uploads/affiliate-products.xml
+   - Importieren Sie die Datei wp-content/uploads/affiliate-products.xml` : ''}
 
 5. **Theme aktivieren**
    - Gehen Sie zu Design > Themes
@@ -199,43 +226,56 @@ function generateInstallGuide(type: WebsiteType, niche: string): string {
 
 6. **Permalinks setzen**
    - Gehen Sie zu Einstellungen > Permalinks
-   - Wählen Sie "Beitragsname"
-
-## Wichtige Hinweise
-
-- Ändern Sie alle Standard-Passwörter
-- Aktivieren Sie SSL für Ihre Domain
-- Konfigurieren Sie regelmäßige Backups
-- Prüfen Sie alle Affiliate Links
+   - Wählen Sie "Beitragsname" als Struktur
 
 ## Support
 
-Bei Fragen wenden Sie sich an: support@example.com
+Bei Fragen kontaktieren Sie: support@yoursite.com
 `;
+
+  zip.addFile('INSTALLATION.md', Buffer.from(installGuide));
+
+  // README
+  const readme = `# ${type} WordPress Website Bundle
+
+Dieses Bundle enthält:
+- WordPress Core
+- Vorinstallierte Plugins
+- Optimiertes Theme
+- Beispiel-Inhalte
+- Installationsanleitung
+
+## Erste Schritte
+
+1. Lesen Sie INSTALLATION.md
+2. Folgen Sie den Schritten
+3. Starten Sie mit Ihrer Website!
+
+Viel Erfolg! 🚀
+`;
+
+  zip.addFile('README.md', Buffer.from(readme));
 }
 
 /**
- * Generiert SQL Import mit Basiseinstellungen
+ * Fügt SQL Import Datei hinzu
  */
-async function generateSQLImport(type: WebsiteType, niche: string): Promise<string> {
-  // Basis WordPress Tabellen und Einstellungen
-  return `-- WordPress SQL Import
--- Generiert am: ${new Date().toISOString()}
--- Typ: ${type}
--- Nische: ${niche}
+async function addDatabaseImport(zip: AdmZip, config: BundleConfig): Promise<void> {
+  const { type, niche } = config;
 
--- Basis Optionen
-INSERT INTO wp_options (option_name, option_value) VALUES
-('blogname', '${niche} Website'),
-('blogdescription', 'Powered by ${type}'),
-('siteurl', 'http://localhost'),
-('home', 'http://localhost'),
-('permalink_structure', '/%postname%/');
+  const sqlContent = `-- WordPress ${type} Database Export
+-- Generiert am: ${new Date().toISOString()}
+
+CREATE DATABASE IF NOT EXISTS wordpress_${type.toLowerCase()};
+USE wordpress_${type.toLowerCase()};
 
 -- Standard Admin User (Passwort: changeme123)
 INSERT INTO wp_users (user_login, user_pass, user_email, user_registered, user_status, display_name)
 VALUES ('admin', MD5('changeme123'), 'admin@example.com', NOW(), 0, 'Administrator');
+
 `;
+
+  zip.addFile('import.sql', Buffer.from(sqlContent));
 }
 
 /**
@@ -249,10 +289,42 @@ export async function cleanupOldBundles(): Promise<void> {
   for (const file of files) {
     const filePath = path.join(OUTPUT_DIR, file);
     const stats = await fs.stat(filePath);
-    
+
     if (now - stats.mtimeMs > maxAge) {
       await fs.remove(filePath);
       console.log(`Deleted old bundle: ${file}`);
     }
   }
+}
+
+/**
+ * Gibt Bundle Download URL zurück
+ */
+export function getBundleDownloadUrl(bundlePath: string): string {
+  const filename = path.basename(bundlePath);
+  return `/api/download/bundle/${filename}`;
+}
+
+/**
+ * Erstellt Bundle für Website
+ */
+export async function createBundleForWebsite(websiteId: string): Promise<string> {
+  const website = await prisma.website.findUnique({
+    where: { id: websiteId },
+    include: { package: true }
+  });
+
+  if (!website) {
+    throw new Error('Website not found');
+  }
+
+  const config: BundleConfig = {
+    websiteId: website.id,
+    type: website.type,
+    niche: website.niche,
+    plugins: ['aawp', 'rank-math', 'wp-rocket'], // Standard Plugins
+    theme: website.package?.name.toLowerCase() || 'default'
+  };
+
+  return await generateWordPressBundle(config);
 }
