@@ -6,118 +6,80 @@ Verkaufe Affiliate, KI-Blog und Business Websites auf Knopfdruck - vollautomatis
 
 ---
 
-## ⚡ Quick Install (5 Minuten)
+## ⚡ One-Click Installation (NEU!)
+
+### Automatische Installation auf VPS (Debian/Ubuntu)
 
 ```bash
-# 1. Repository klonen
+# Download & Ausführen des Smart Installers
+curl -fsSL https://raw.githubusercontent.com/Tech-lab-sys/webprojekte-verkauf-system/main/install.sh | bash
+```
+
+**Das Installationsskript installiert automatisch:**
+- ✅ Node.js 20 LTS & pnpm
+- ✅ PostgreSQL Datenbank
+- ✅ Nginx Reverse Proxy
+- ✅ PM2 Process Manager
+- ✅ UFW Firewall
+- ✅ Let's Encrypt SSL (optional)
+- ✅ Application Dependencies
+- ✅ Automatische Konfiguration
+
+**Installation dauert: ~10-15 Minuten**
+
+---
+
+## 🔧 Manuelle Installation (5 Minuten)
+
+### 1. Repository klonen
+```bash
 git clone https://github.com/Tech-lab-sys/webprojekte-verkauf-system.git
 cd webprojekte-verkauf-system
+```
 
-# 2. Dependencies installieren
+### 2. Dependencies installieren
+```bash
 pnpm install
+```
 
-# 3. Environment-Variablen konfigurieren
+### 3. Environment-Variablen konfigurieren
+```bash
 cp .env.example .env.local
+```
 
-# Fülle aus:
-# PERPLEXITY_API_KEY=pplx_dein_key_hier
-# STRIPE_SECRET_KEY=sk_test_...
-# DATABASE_URL=postgresql://...
-# SMTP_HOST=smtp.gmail.com
-# SMTP_USER=deine@email.de
-# SMTP_PASS=dein_app_passwort
+**Fülle aus:**
+```bash
+PERPLEXITY_API_KEY=pplx_dein_key_hier
+STRIPE_SECRET_KEY=sk_test_...
+DATABASE_URL=postgresql://...
+SMTP_HOST=smtp.gmail.com
+SMTP_USER=deine@email.de
+```
 
-# 4. Datenbank Setup
+### 4. Datenbank Setup
+```bash
 pnpm db:push
 pnpm db:seed
+```
 
-# 5. Development Server starten
+### 5. Development Server starten
+```bash
 pnpm dev
 ```
 
-**Fertig!** → Öffne `http://localhost:3000` 🎉
-
----
-
-## 📦 Features
-
-✅ **3 Website-Pakete:** Affiliate, KI-Blog, Business  
-✅ **KI-Angebotsgenerierung:** Perplexity API (nur 5€/Monat!)  
-✅ **Automatische Bundle-Erstellung:** ZIP mit WordPress, Plugins, Guides  
-✅ **Stripe-Zahlungen:** Sichere Payment-Integration  
-✅ **Email-Versand:** Automatische Kaufbestätigung + Download-Link  
-✅ **Admin-Dashboard:** Verkaufsstatistiken & Analytics  
-✅ **Preisoptimierung:** Automatische Rabatt-Berechnung (40-80%)  
-✅ **DSGVO-konform:** Rechtssichere Templates  
-
----
-
-## 💰 Verdienst-Potenzial
-
-| Paket | Preis | Marge | Potenzial/Monat |
-|-------|-------|-------|----------------|
-| Affiliate Website | 99€ | 40€ | 1.200€ (30 Sales) |
-| KI-Blog Website | 149€ | 60€ | 1.800€ (30 Sales) |
-| Business Website | 119€ | 50€ | 1.500€ (30 Sales) |
-| **GESAMT** | - | - | **4.500€+** |
-
-**API-Kosten:** Nur 5€/Monat mit Perplexity (statt 95€ mit OpenAI) ✅
-
----
-
-## 🛠️ Tech Stack
-
-- **Frontend:** React + TypeScript + Tailwind CSS
-- **Backend:** Node.js + tRPC + Express
-- **Database:** PostgreSQL + Prisma ORM
-- **AI:** Perplexity API (Sonar models)
-- **Payments:** Stripe
-- **Email:** Nodemailer + SMTP
-- **Storage:** S3-kompatibel (Bundles)
-
----
-
-## 📂 Projektstruktur
-
-```
-webprojekte-verkauf-system/
-├── client/               # React Frontend
-│   ├── src/
-│   │   ├── components/   # React Components
-│   │   ├── lib/          # Utils & Hooks
-│   │   └── App.tsx       # Main App
-├── server/               # Node.js Backend
-│   ├── _core/            # Core Services
-│   │   ├── db.ts         # Database Queries
-│   │   ├── perplexity.ts # Perplexity AI Client
-│   │   ├── bundleGenerator.ts
-│   │   ├── emailService.ts
-│   │   └── paymentService.ts
-│   ├── routers/          # tRPC Routers
-│   └── index.ts          # Server Entry
-├── prisma/
-│   └── schema.prisma     # Database Schema
-├── docs/                 # Dokumentation
-│   ├── SALES_OFFER_EBAY.md
-│   ├── SALES_OFFER_FIVERR.md
-│   ├── TECHNICAL_DOCUMENTATION.md
-│   └── LEGAL_PAGES_GUIDE.md
-├── .env.example          # Environment Template
-├── package.json
-└── README.md
-```
+**Fertig!** → Öffne http://localhost:3000 🎉
 
 ---
 
 ## 🔑 Benötigte API Keys
 
 ### 1. Perplexity AI (5€/Monat)
-1. Gehe zu: https://www.perplexity.ai/api
+1. Gehe zu: [perplexity.ai/api](https://www.perplexity.ai/api)
 2. Klick "Get API Access"
 3. Kopiere API Key → `.env.local`
 
 ### 2. Stripe (kostenlos für Test-Mode)
-1. Gehe zu: https://dashboard.stripe.com/apikeys
+1. Gehe zu: [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys)
 2. Kopiere "Secret Key" → `.env.local`
 
 ### 3. PostgreSQL Database
@@ -126,120 +88,176 @@ webprojekte-verkauf-system/
 
 ### 4. SMTP für Emails
 - **Gmail:** App-Passwort erstellen
-- **Alternative:** SendGrid, Mailgun, Postmark
+- **Sendinblue:** Kostenlos 300 Emails/Tag
+- **Resend:** Moderne Alternative
 
 ---
 
-## 🚀 Deployment
+## 📦 Projekt-Struktur
 
-### Vercel (empfohlen)
-```bash
-# 1. Vercel CLI installieren
-pnpm i -g vercel
-
-# 2. Deploy
-vercel
-
-# 3. Environment-Variablen setzen
-vercel env add PERPLEXITY_API_KEY
-vercel env add STRIPE_SECRET_KEY
-vercel env add DATABASE_URL
 ```
-
-### Railway
-```bash
-# 1. Railway CLI installieren
-npm i -g @railway/cli
-
-# 2. Deploy
-railway up
+webprojekte-verkauf-system/
+├── client/                 # React Frontend
+│   └── src/
+│       ├── components/    # UI Components
+│       └── lib/           # Utilities
+├── server/                # Backend
+│   ├── _core/            # Core Services
+│   │   ├── bundleGenerator.ts    # ZIP Erstellung
+│   │   ├── storage.ts            # S3/Local Storage
+│   │   ├── llm-fallback.ts       # Perplexity + OpenAI
+│   │   ├── perplexity.ts         # Perplexity Integration
+│   │   ├── emailService.ts       # Email Versand
+│   │   └── paymentService.ts     # Stripe Payments
+│   └── api/              # tRPC Routes
+├── prisma/               # Database Schema
+├── install.sh            # 🆕 Smart Installer Script
+├── IMPLEMENTATION_GUIDE.md
+├── VPS_DEPLOYMENT_GUIDE.md
+└── README.md
 ```
 
 ---
 
-## 📊 Dashboard Features
+## 💰 Verdienst-Potenzial
 
-- **Verkaufsstatistiken:** Umsatz, Anzahl, Conversion-Rate
-- **Paket-Performance:** Top-Seller, Preisoptimierung
-- **Kosten-Tracking:** API-Usage, Gewinnmarge
-- **Kundenübersicht:** Downloads, Support-Anfragen
+| Paket | Preis | Marge | Potenzial/Monat |
+|-------|-------|-------|------------------|
+| Affiliate Website | 99€ | 40€ | 1.200€ (30 Sales) |
+| KI-Blog Website | 149€ | 60€ | 1.800€ (30 Sales) |
+| Business Website | 119€ | 50€ | 1.500€ (30 Sales) |
+| **GESAMT** | - | - | **4.500€+** |
+
+**API-Kosten:** Nur 5€/Monat mit Perplexity (statt 95€ mit OpenAI)! ✅
 
 ---
 
-## 🧪 Tests
+## 🔧 Tech Stack
 
-```bash
-# Unit-Tests
-pnpm test
+### Frontend
+- **React 18** + TypeScript
+- **Vite** + Tailwind CSS
+- **tRPC** Client
 
-# E2E-Tests
-pnpm test:e2e
+### Backend
+- **Node.js** + tRPC + Express
+- **Prisma** ORM
+- **PostgreSQL** Database
 
-# Coverage
-pnpm test:coverage
-```
+### AI & Payments
+- **Perplexity API** (Sonar models)
+- **OpenAI** (Fallback)
+- **Stripe** (Payments)
+
+### Storage
+- **S3-kompatibel** (Bundles)
+- **Lokaler Storage** (Fallback)
 
 ---
 
 ## 📚 Dokumentation
 
-- **[Quick Install Guide](docs/QUICK_INSTALL.md)** - Setup in 5 Minuten
-- **[Technical Documentation](docs/TECHNICAL_DOCUMENTATION.md)** - Architektur & APIs
-- **[Sales Offers eBay](docs/SALES_OFFER_EBAY.md)** - eBay-Listings
-- **[Sales Offers Fiverr](docs/SALES_OFFER_FIVERR.md)** - Fiverr-Gigs
-- **[Legal Pages](docs/LEGAL_PAGES_GUIDE.md)** - DSGVO, Impressum, etc.
+- 📖 [IMPLEMENTATION_GUIDE.md](./IMPLEMENTATION_GUIDE.md) - Kompletter Setup-Guide
+- 🖥️ [VPS_DEPLOYMENT_GUIDE.md](./VPS_DEPLOYMENT_GUIDE.md) - VPS Deployment auf Unesty/Hetzner
+- ⚙️ [install.sh](./install.sh) - Automatisches Installationsskript
 
 ---
 
-## 🐛 Troubleshooting
+## 🚀 Deployment Optionen
 
-### Database Connection Error
+### Option 1: VPS mit Installationsskript (Empfohlen)
 ```bash
-# Prüfe DATABASE_URL in .env.local
-# Test mit:
-pnpm db:studio
+curl -fsSL https://raw.githubusercontent.com/Tech-lab-sys/webprojekte-verkauf-system/main/install.sh | bash
 ```
 
-### Perplexity API Error
+### Option 2: Vercel (Schnellste Option)
 ```bash
-# Prüfe API Key:
-curl https://api.perplexity.ai/chat/completions \
-  -H "Authorization: Bearer $PERPLEXITY_API_KEY"
+vercel --prod
 ```
 
-### Build Error
+### Option 3: Docker
 ```bash
-# Cache löschen
-rm -rf .next node_modules
-pnpm install
+docker-compose up -d
+```
+
+---
+
+## 🛠️ Development Commands
+
+```bash
+# Dev Server
+pnpm dev
+
+# Build
 pnpm build
+
+# Start Production
+pnpm start
+
+# Database
+pnpm db:push      # Schema pushen
+pnpm db:seed      # Seed Daten
+pnpm db:studio    # Prisma Studio
+
+# Tests
+pnpm test
+pnpm test:e2e
 ```
+
+---
+
+## 📊 Features
+
+✅ **KI-Angebotsgenerierung** - Automatisch mit Perplexity AI  
+✅ **Bundle-Erstellung** - WordPress ZIP mit allen Dateien  
+✅ **Stripe Integration** - Sichere Zahlungsabwicklung  
+✅ **Email-Versand** - Automatische Kaufbestätigungen  
+✅ **S3 Storage** - Oder lokaler Storage als Fallback  
+✅ **Admin Dashboard** - Verkaufsübersicht & Analytics  
+✅ **Automatische Preisoptimierung** - KI-basiert  
+✅ **3 Paket-Typen** - Affiliate, KI-Blog, Business  
+
+---
+
+## 🔐 Security
+
+- ✅ Environment Variables für Secrets
+- ✅ Stripe PCI-DSS konform
+- ✅ DSGVO-konforme Datenverarbeitung
+- ✅ SQL Injection Protection (Prisma ORM)
+- ✅ HTTPS/SSL mit Let's Encrypt
+- ✅ UFW Firewall
 
 ---
 
 ## 📞 Support
 
-- **Issues:** https://github.com/Tech-lab-sys/webprojekte-verkauf-system/issues
-- **Discussions:** https://github.com/Tech-lab-sys/webprojekte-verkauf-system/discussions
+**Bei Problemen:**
+
+- 📧 Email: support@yoursite.com
+- 💬 [GitHub Issues](https://github.com/Tech-lab-sys/webprojekte-verkauf-system/issues)
+- 📚 [Discussions](https://github.com/Tech-lab-sys/webprojekte-verkauf-system/discussions)
 
 ---
 
 ## 📝 Lizenz
 
-MIT License - siehe [LICENSE](LICENSE)
+MIT License – siehe [LICENSE](./LICENSE)
 
 ---
 
-## 🎯 Roadmap
+## 🚢 Roadmap
 
 - [ ] Multi-Language Support (EN, ES, FR)
 - [ ] WhatsApp Integration für Customer Support
 - [ ] A/B Testing für Preisoptimierung
-- [ ] Affiliate-Program für Reseller
-- [ ] Mobile App (React Native)
+- [ ] Affiliate-Programm für Reseller
+- [ ] White-Label Option
 
 ---
 
-**Made with ❤️ in Germany** 🇩🇪
+## 🎉 Glückwunsch!
 
-**Status: ✅ Production-Ready**
+Du bist jetzt bereit, dein Website-Verkaufssystem zu launchen! 🚀
+
+**Let's make money! 💰**
