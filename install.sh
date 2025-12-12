@@ -426,4 +426,86 @@ server {
     client_max_body_size 500M;
 
     location / {
-        proxy_
+        proxy__pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+EOF
+
+        sudo ln -sf /etc/nginx/sites-available/webprojekte /etc/nginx/sites-enabled/
+        sudo rm -f /etc/nginx/sites-enabled/default
+        sudo nginx -t && sudo systemctl reload nginx
+        
+        log_success "Nginx konfiguriert für $DOMAIN"
+    fi
+}
+
+# Abschluss-Informationen
+print_summary() {
+    echo ""
+    cat << SUMMARY
+${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
+${GREEN}═════════════════════════════════════════════════════════════════${NC}
+
+${BLUE}📋 Installierte Komponenten:${NC}
+  ✓ Node.js $(node -v)
+  ✓ PostgreSQL
+  ✓ Nginx Reverse Proxy
+  ✓ PM2 Process Manager
+  ✓ UFW Firewall
+
+${BLUE}🌐 Zugriff:${NC}
+  → http://$DOMAIN
+
+${BLUE}📁 Installationspfad:${NC}
+  → /home/${USER}/webprojekte-verkauf-system
+
+${BLUE}🔑 Datenbank-Credentials:${NC}
+  → Gespeichert in: /tmp/db_credentials.txt
+  → Bitte sichern und löschen!
+
+${BLUE}📝 Nützliche Befehle:${NC}
+  pm2 status              - Status anzeigen
+  pm2 logs                - Logs anzeigen
+  pm2 restart webprojekte-verkauf - Neustart
+  pm2 monit               - Monitoring
+
+${YELLOW}⚠️  Wichtig:${NC}
+  1. Sichere die DB-Credentials aus /tmp/db_credentials.txt
+  2. Lösche die Datei nach dem Sichern
+  3. SSL-Zertifikat: sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN
+
+${GREEN}Viel Erfolg mit deinem Webprojekte-Verkaufs-System! 🚀${NC}
+SUMMARY
+}
+
+# Main Installation
+main() {
+    print_banner
+    check_system
+    update_system
+    install_essentials
+    setup_firewall
+    create_deploy_user
+    install_nodejs
+    install_postgresql
+    setup_database
+    install_pm2
+    clone_application
+    install_dependencies
+    create_env_template
+    create_pm2_config
+    install_nginx
+    setup_prisma
+    create_nginx_config
+    start_application
+    
+    print_summary
+}
+
+# Start installation
+main
