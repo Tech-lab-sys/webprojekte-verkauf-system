@@ -37,6 +37,7 @@ log_error() {
 print_banner() {
     log_info "🚀 Webprojekte-Verkaufs-System - Smart Installer v1.0.0"
 }
+
 check_system() {
     log_info "Prüfe Systemvoraussetzungen..."
     
@@ -262,41 +263,6 @@ install_dependencies() {
 # .env Template erstellen
 create_env_template() {
     log_info "Erstelle .env.local Template..."
-
-    # Prisma Setup
-setup_prisma() {
-    log_info "Konfiguriere Prisma & Datenbank Schema..."
-    
-    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
-    cd "$TARGET_DIR"
-    
-    # Prisma Schema in Datenbank pushen
-    pnpm db:push > /dev/null 2>&1
-    
-    # Seed-Daten einfügen
-    if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
-        pnpm db:seed > /dev/null 2>&1 || true
-    fi
-    
-    log_success "Prisma konfiguriert"
-}
-
-# Application starten
-start_application() {
-    log_info "Starte Application mit PM2..."
-    
-    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
-    cd "$TARGET_DIR"
-    
-    # Im Dev-Mode starten (Build hat Fehler)
-    pm2 start "pnpm dev" --name webprojekte-verkauf
-    pm2 save
-    
-    # PM2 Auto-Start einrichten
-    pm2 startup systemd -u ${USER} --hp /home/${USER} > /dev/null 2>&1 || true
-    
-    log_success "Application gestartet"
-}
     
     TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
     
@@ -337,6 +303,41 @@ EOF
     log_warning "WICHTIG: Editiere .env.local und füge deine API Keys ein!"
 }
 
+# Prisma Setup
+setup_prisma() {
+    log_info "Konfiguriere Prisma & Datenbank Schema..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    cd "$TARGET_DIR"
+    
+    # Prisma Schema in Datenbank pushen
+    pnpm db:push > /dev/null 2>&1
+    
+    # Seed-Daten einfügen
+    if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
+        pnpm db:seed > /dev/null 2>&1 || true
+    fi
+    
+    log_success "Prisma konfiguriert"
+}
+
+# Application starten
+start_application() {
+    log_info "Starte Application mit PM2..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    cd "$TARGET_DIR"
+    
+    # Im Dev-Mode starten (Build hat Fehler)
+    pm2 start "pnpm dev" --name webprojekte-verkauf
+    pm2 save
+    
+    # PM2 Auto-Start einrichten
+    pm2 startup systemd -u ${USER} --hp /home/${USER} > /dev/null 2>&1 || true
+    
+    log_success "Application gestartet"
+}
+
 # PM2 Ecosystem erstellen
 create_pm2_config() {
     log_info "Erstelle PM2 Konfiguration..."
@@ -345,24 +346,24 @@ create_pm2_config() {
     
     cat > "$TARGET_DIR/ecosystem.config.js" << 'EOF'
 module.exports = {
-  apps: [{
-    name: 'webprojekte-verkauf',
-    script: 'npm',
-    args: 'start',
-    cwd: '/home/deploy/webprojekte-verkauf-system',
-    instances: 2,
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'production',
-      PORT: 3000
-    },
-    error_file: '/home/deploy/logs/err.log',
-    out_file: '/home/deploy/logs/out.log',
-    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-    merge_logs: true,
-    autorestart: true,
-    max_memory_restart: '1G'
-  }]
+    apps: [{
+        name: 'webprojekte-verkauf',
+        script: 'npm',
+        args: 'start',
+        cwd: '/home/deploy/webprojekte-verkauf-system',
+        instances: 2,
+        exec_mode: 'cluster',
+        env: {
+            NODE_ENV: 'production',
+            PORT: 3000
+        },
+        error_file: '/home/deploy/logs/err.log',
+        out_file: '/home/deploy/logs/out.log',
+        log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+        merge_logs: true,
+        autorestart: true,
+        max_memory_restart: '1G'
+    }]
 };
 EOF
     
@@ -375,9 +376,7 @@ EOF
 # Nginx Config erstellen
 create_nginx_config() {
     log_info "Erstelle Nginx Konfiguration..."
-        
-    if [ "$IS_ROOT" = true ]; then
-        cat > /etc/nginx/sites-available/webprojekte << EOF
+    
     # Domain aus Umgebungsvariable oder interaktiv abfragen
     if [ -z "$DOMAIN" ]; then
         if [ -t 0 ]; then
@@ -390,9 +389,13 @@ create_nginx_config() {
         fi
     fi
     
-    log_info "Konfiguriere Nginx für Domain: $DOMAIN"    listen 80;
+    log_info "Konfiguriere Nginx für Domain: $DOMAIN"
+    
+    if [ "$IS_ROOT" = true ]; then
+        cat > /etc/nginx/sites-available/webprojekte << EOF
+server {
+    listen 80;
     server_name $DOMAIN www.$DOMAIN;
-
     client_max_body_size 500M;
 
     location / {
@@ -411,7 +414,7 @@ create_nginx_config() {
     }
 }
 EOF
-        
+
         ln -sf /etc/nginx/sites-available/webprojekte /etc/nginx/sites-enabled/
         rm -f /etc/nginx/sites-enabled/default
         nginx -t && systemctl reload nginx
@@ -422,7 +425,6 @@ EOF
 server {
     listen 80;
     server_name $DOMAIN www.$DOMAIN;
-
     client_max_body_size 500M;
 
     location / {
@@ -431,84 +433,4 @@ server {
         proxy_set_header Upgrade \\\$http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host \\\$host;
-        proxy_cache_bypass \\\$http_upgrade;
-    }
-}
-EOF"
-        
-        sudo ln -sf /etc/nginx/sites-available/webprojekte /etc/nginx/sites-enabled/
-        sudo rm -f /etc/nginx/sites-enabled/default
-        sudo nginx -t && sudo systemctl reload nginx
-        
-        log_success "Nginx konfiguriert für $DOMAIN"
-    fi
-}
-
-# Abschluss-Informationen
-print_summary() {
-    echo ""
-    cat << SUMMARY
-    ${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
-    ${GREEN}═════════════════════════════════════════════════════════════════${NC}
-${BLUE}📋 Installierte Komponenten:${NC}
-  ✓ Node.js $(node -v)
-  ✓ PostgreSQL
-  ✓ Nginx Reverse Proxy
-  ✓ PM2 Process Manager
-  ✓ UFW Firewall
-
-${BLUE}🌐 Zugriff:${NC}
-  → https://$DOMAIN
-  → http://$DOMAIN (Weiterleitung zu HTTPS)
-
-${BLUE}📁 Installationspfad:${NC}
-  → /home/deploy/webprojekte-verkauf-system
-
-${BLUE}🔑 Datenbank-Credentials:${NC}
-  → Gespeichert in: /tmp/db_credentials.txt
-  → Bitte sichern und löschen!
-
-${BLUE}📝 Nützliche Befehle:${NC}
-  pm2 status              - Status anzeigen
-  pm2 logs               - Logs anzeigen
-  pm2 restart ecosystem  - Neustart
-  pm2 monit             - Monitoring
-
-${YELLOW}⚠️  Wichtig:${NC}
-  1. Sichere die DB-Credentials aus /tmp/db_credentials.txt
-  2. Lösche die Datei nach dem Sichern
-  3. SSL-Zertifikat kann jederzeit mit Certbot erneuert werden
-
-${GREEN}Viel Erfolg mit deinem Webprojekte-Verkaufs-System! 🚀${NC}
-SUMMARY
-}
-}
-# Main Installation
-main() {
-    log_info "Starte Smart Installer..."
-    
-    check_system
-        update_system
-    install_essentials
-    setup_firewall
-    create_deploy_user
-    install_nodejs
-    install_postgresql
-    setup_database
-    install_pm2
-    clone_application
-    install_dependencies
-    create_env_template
-    create_pm2_config
-install_nginx
-
-    setup_prisma
-    create_nginx_config
-        start_application
-    
-    print_summary
-}
-
-# Start installation
-print_banner
-main
+        proxy_cache_bypass \\\$http_
