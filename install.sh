@@ -349,13 +349,22 @@ EOF
 # Nginx Config erstellen
 create_nginx_config() {
     log_info "Erstelle Nginx Konfiguration..."
-    
-    read -p "Domain eingeben (z.B. example.com): " DOMAIN
-    
+        
     if [ "$IS_ROOT" = true ]; then
         cat > /etc/nginx/sites-available/webprojekte << EOF
-server {
-    listen 80;
+    # Domain aus Umgebungsvariable oder interaktiv abfragen
+    if [ -z "$DOMAIN" ]; then
+        if [ -t 0 ]; then
+            # STDIN ist ein Terminal, interaktive Eingabe möglich
+            read -p "Domain eingeben (z.B. example.com): " DOMAIN
+        else
+            # Nicht-interaktiv (pipe), verwende localhost als Default
+            log_warning "Keine Domain angegeben, verwende localhost"
+            DOMAIN="localhost"
+        fi
+    fi
+    
+    log_info "Konfiguriere Nginx für Domain: $DOMAIN"    listen 80;
     server_name $DOMAIN www.$DOMAIN;
 
     client_max_body_size 500M;
