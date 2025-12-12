@@ -454,21 +454,25 @@ EOF
 main() {
     log_info "Starte Smart Installer..."
     
-    check_os
-    check_root
+    check_system
+        update_system
+    install_essentials
+    setup_firewall
+    create_deploy_user
+    install_nodejs
+    install_postgresql
+    setup_database
+    install_pm2
+    clone_application
     install_dependencies
-    setup_user
-    setup_postgresql
-    clone_repository
-    setup_env
-    install_app
-    setup_pm2
+    create_env_template
+    create_pm2_config
     create_nginx_config
     install_nginx
-    setup_certbot
     
     print_summary
 }
 
 # Start installation
+print_banner
 main
