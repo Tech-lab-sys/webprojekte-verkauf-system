@@ -412,4 +412,63 @@ EOF"
 # Abschluss-Informationen
 print_summary() {
     echo ""
-    echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    cat << "EOF"
+${GREEN}═══════════════════════════════════════════════════════════════════${NC}
+${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
+${GREEN}═══════════════════════════════════════════════════════════════════${NC}
+
+${BLUE}📋 Installierte Komponenten:${NC}
+  ✓ Node.js $(node -v)
+  ✓ PostgreSQL
+  ✓ Nginx Reverse Proxy
+  ✓ PM2 Process Manager
+  ✓ UFW Firewall
+
+${BLUE}🌐 Zugriff:${NC}
+  → https://$DOMAIN
+  → http://$DOMAIN (Weiterleitung zu HTTPS)
+
+${BLUE}📁 Installationspfad:${NC}
+  → /home/deploy/webprojekte-verkauf-system
+
+${BLUE}🔑 Datenbank-Credentials:${NC}
+  → Gespeichert in: /tmp/db_credentials.txt
+  → Bitte sichern und löschen!
+
+${BLUE}📝 Nützliche Befehle:${NC}
+  pm2 status              - Status anzeigen
+  pm2 logs               - Logs anzeigen
+  pm2 restart ecosystem  - Neustart
+  pm2 monit             - Monitoring
+
+${YELLOW}⚠️  Wichtig:${NC}
+  1. Sichere die DB-Credentials aus /tmp/db_credentials.txt
+  2. Lösche die Datei nach dem Sichern
+  3. SSL-Zertifikat kann jederzeit mit Certbot erneuert werden
+
+${GREEN}Viel Erfolg mit deinem Webprojekte-Verkaufs-System! 🚀${NC}
+EOF
+}
+
+# Main Installation
+main() {
+    log_info "Starte Smart Installer..."
+    
+    check_os
+    check_root
+    install_dependencies
+    setup_user
+    setup_postgresql
+    clone_repository
+    setup_env
+    install_app
+    setup_pm2
+    create_nginx_config
+    install_nginx
+    setup_certbot
+    
+    print_summary
+}
+
+# Start installation
+main
