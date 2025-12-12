@@ -1,0 +1,101 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Package {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // "affiliate", "ai-blog", "business"
+  description String
+  features    String[] // Array of features
+  basePrice   Float
+  
+  offers      Offer[]
+  purchases   Purchase[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([type])
+}
+
+model Offer {
+  id                String   @id @default(cuid())
+  packageId         String
+  package           Package  @relation(fields: [packageId], references: [id])
+  
+  title             String
+  description       String   @db.Text
+  highlightFeatures String[]
+  
+  originalPrice     Float
+  discountedPrice   Float
+  discountPercent   Int
+  
+  urgencyText       String?
+  validUntil        DateTime?
+  
+  isActive          Boolean  @default(true)
+  views             Int      @default(0)
+  conversions       Int      @default(0)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([packageId])
+  @@index([isActive])
+}
+
+model Purchase {
+  id                String   @id @default(cuid())
+  packageId         String
+  package           Package  @relation(fields: [packageId], references: [id])
+  
+  customerEmail     String
+  customerName      String?
+  
+  amount            Float
+  currency          String   @default("EUR")
+  
+  stripeSessionId   String?  @unique
+  stripePaymentId   String?  @unique
+  
+  status            String   // "pending", "completed", "failed", "refunded"
+  
+  bundleUrl         String?  // S3 URL to download bundle
+  bundleGenerated   Boolean  @default(false)
+  
+  downloadCount     Int      @default(0)
+  lastDownloadAt    DateTime?
+  
+  metadata          Json?    // Additional data
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([customerEmail])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Analytics {
+  id            String   @id @default(cuid())
+  
+  event         String   // "offer_view", "purchase", "download", etc.
+  packageId     String?
+  offerId       String?
+  purchaseId    String?
+  
+  metadata      Json?    // Additional event data
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([event])
+  @@index([packageId])
+  @@index([createdAt])
+}
