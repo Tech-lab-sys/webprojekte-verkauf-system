@@ -476,8 +476,9 @@ main() {
     install_dependencies
     create_env_template
     create_pm2_config
+install_nginx
+
     create_nginx_config
-    install_nginx
     
     print_summary
 }
