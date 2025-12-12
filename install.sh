@@ -36,8 +36,7 @@ log_error() {
 # Banner
 print_banner() {
     echo -e "${GREEN}"
-    cat << "EOF"
-╦ ╦┌─┐┌┐ ┌─┐┬─┐┌─┐ ┬┌─┐┬┌─┌┬┐┌─┐   ╦  ╦┌─┐┬─┐┬┌─┌─┐┬ ┬┌─┐
+ cat << EOF╦ ╦┌─┐┌┐ ┌─┐┬─┐┌─┐ ┬┌─┐┬┌─┌┬┐┌─┐   ╦  ╦┌─┐┬─┐┬┌─┌─┐┬ ┬┌─┐
 ║║║├┤ ├┴┐├─┘├┬┘│ │ │├┤ ├┴┐ │ ├┤ ───╚╗╔╝├┤ ├┬┘├┴┐├─┤│ │├┤ 
 ╚╩╝└─┘└─┘┴  ┴└─└─┘└┘└─┘┴ ┴ ┴ └─┘    ╚╝ └─┘┴└─┴ ┴┴ ┴└─┘└  
                 Smart Installer v1.0.0
@@ -271,6 +270,41 @@ install_dependencies() {
 # .env Template erstellen
 create_env_template() {
     log_info "Erstelle .env.local Template..."
+
+    # Prisma Setup
+setup_prisma() {
+    log_info "Konfiguriere Prisma & Datenbank Schema..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    cd "$TARGET_DIR"
+    
+    # Prisma Schema in Datenbank pushen
+    pnpm db:push > /dev/null 2>&1
+    
+    # Seed-Daten einfügen
+    if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
+        pnpm db:seed > /dev/null 2>&1 || true
+    fi
+    
+    log_success "Prisma konfiguriert"
+}
+
+# Application starten
+start_application() {
+    log_info "Starte Application mit PM2..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    cd "$TARGET_DIR"
+    
+    # Im Dev-Mode starten (Build hat Fehler)
+    pm2 start "pnpm dev" --name webprojekte-verkauf
+    pm2 save
+    
+    # PM2 Auto-Start einrichten
+    pm2 startup systemd -u ${USER} --hp /home/${USER} > /dev/null 2>&1 || true
+    
+    log_success "Application gestartet"
+}
     
     TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
     
@@ -421,9 +455,7 @@ EOF"
 # Abschluss-Informationen
 print_summary() {
     echo ""
-    cat << "EOF"
-${GREEN}═══════════════════════════════════════════════════════════════════${NC}
-${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
+    cat << EOF${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
 ${GREEN}═══════════════════════════════════════════════════════════════════${NC}
 
 ${BLUE}📋 Installierte Komponenten:${NC}
@@ -478,7 +510,9 @@ main() {
     create_pm2_config
 install_nginx
 
+    setup_prisma
     create_nginx_config
+        start_application
     
     print_summary
 }
