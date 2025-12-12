@@ -380,10 +380,8 @@ create_nginx_config() {
     # Domain aus Umgebungsvariable oder interaktiv abfragen
     if [ -z "$DOMAIN" ]; then
         if [ -t 0 ]; then
-            # STDIN ist ein Terminal, interaktive Eingabe möglich
             read -p "Domain eingeben (z.B. example.com): " DOMAIN
         else
-            # Nicht-interaktiv (pipe), verwende localhost als Default
             log_warning "Keine Domain angegeben, verwende localhost"
             DOMAIN="localhost"
         fi
@@ -421,16 +419,11 @@ EOF
         
         log_success "Nginx konfiguriert für $DOMAIN"
     else
-        sudo bash -c "cat > /etc/nginx/sites-available/webprojekte << 'EOF'
+        sudo bash -c "cat > /etc/nginx/sites-available/webprojekte" << EOF
 server {
     listen 80;
     server_name $DOMAIN www.$DOMAIN;
     client_max_body_size 500M;
 
     location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy
+        proxy_
