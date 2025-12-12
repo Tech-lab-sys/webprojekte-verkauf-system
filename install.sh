@@ -1,268 +1,522 @@
 #!/bin/bash
+
 ################################################################################
 # 🚀 Webprojekte-Verkauf-System - Smart Installer
 # Automatische Installation auf Debian/Ubuntu VServer
 # Autor: Tech-lab-sys
-# Version: 2.0.0
+# Version: 1.0.0
 ################################################################################
-set -e
 
-# Farben
+set -e  # Exit bei Fehler
+
+# Farben für Output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m'
+NC='\033[0m' # No Color
 
-# Globale Variablen
-DOMAIN="${DOMAIN:-localhost}"
-IS_ROOT=false
+# Logging Funktionen
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
 
-# Logging
-log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
-log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
-log_warning() { echo -e "${YELLOW}[WARNING]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
+log_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
 
 # Banner
 print_banner() {
     echo -e "${GREEN}"
-    cat << 'EOF'
-╭────────────────────────────────────────────────────────────╮
-│  🚀 Webprojekte-Verkaufs-System - Smart Installer v2.0  │
-╰────────────────────────────────────────────────────────────╯
+ cat << EOF╦ ╦┌─┐┌┐ ┌─┐┬─┐┌─┐ ┬┌─┐┬┌─┌┬┐┌─┐   ╦  ╦┌─┐┬─┐┬┌─┌─┐┬ ┬┌─┐
+║║║├┤ ├┴┐├─┘├┬┘│ │ │├┤ ├┴┐ │ ├┤ ───╚╗╔╝├┤ ├┬┘├┴┐├─┤│ │├┤ 
+╚╩╝└─┘└─┘┴  ┴└─└─┘└┘└─┘┴ ┴ ┴ └─┘    ╚╝ └─┘┴└─┴ ┴┴ ┴└─┘└  
+                Smart Installer v1.0.0
 EOF
     echo -e "${NC}"
 }
 
-# System Check
+# Systeminfo prüfen
 check_system() {
-    log_info "Prüfe System..."
+    log_info "Prüfe Systemvoraussetzungen..."
     
+    # OS Detection
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS=$ID
+        VER=$VERSION_ID
     else
-        log_error "OS nicht erkannt"
+        log_error "OS konnte nicht erkannt werden!"
         exit 1
     fi
+    
+    log_info "Erkanntes System: $OS $VER"
     
     if [[ "$OS" != "ubuntu" && "$OS" != "debian" ]]; then
-        log_error "Nur Ubuntu/Debian unterstützt"
+        log_error "Nur Ubuntu und Debian werden unterstützt!"
         exit 1
     fi
     
-    [[ $EUID -eq 0 ]] && IS_ROOT=true || IS_ROOT=false
+    # Root Check
+    if [[ $EUID -eq 0 ]]; then
+        log_warning "Läuft als Root - Deploy-User wird erstellt"
+        IS_ROOT=true
+    else
+        log_info "Läuft als Non-Root User"
+        IS_ROOT=false
+    fi
     
-    log_success "System-Check OK ($OS)"
+    # RAM Check
+    TOTAL_RAM=$(free -m | awk '/^Mem:/{print $2}')
+    if [ "$TOTAL_RAM" -lt 2000 ]; then
+        log_warning "Weniger als 2GB RAM verfügbar. Performance könnte leiden."
+    fi
+    
+    log_success "System-Check abgeschlossen"
 }
 
-# System Update
+# System Updates
 update_system() {
-    log_info "Update System..."
-    ${IS_ROOT} && apt update -qq && apt upgrade -y -qq || sudo apt update -qq && sudo apt upgrade -y -qq
+    log_info "System wird aktualisiert..."
+    
+    if [ "$IS_ROOT" = true ]; then
+        apt update -qq
+        apt upgrade -y -qq
+    else
+        sudo apt update -qq
+        sudo apt upgrade -y -qq
+    fi
+    
     log_success "System aktualisiert"
 }
 
-# Essentials
+# Basis-Tools installieren
 install_essentials() {
-    log_info "Installiere Tools..."
-    ${IS_ROOT} && apt install -y curl wget git build-essential ufw htop nano > /dev/null 2>&1 || sudo apt install -y curl wget git build-essential ufw htop nano > /dev/null 2>&1
-    log_success "Tools installiert"
+    log_info "Installiere Basis-Tools..."
+    
+    local PACKAGES="curl wget git build-essential ufw fail2ban htop nano"
+    
+    if [ "$IS_ROOT" = true ]; then
+        apt install -y $PACKAGES > /dev/null 2>&1
+    else
+        sudo apt install -y $PACKAGES > /dev/null 2>&1
+    fi
+    
+    log_success "Basis-Tools installiert"
 }
 
-# Firewall
+# Firewall konfigurieren
 setup_firewall() {
-    log_info "Setup Firewall..."
-    if ${IS_ROOT}; then
-        ufw --force enable && ufw allow OpenSSH && ufw allow 80/tcp && ufw allow 443/tcp
+    log_info "Konfiguriere Firewall (UFW)..."
+    
+    if [ "$IS_ROOT" = true ]; then
+        ufw --force enable
+        ufw allow OpenSSH
+        ufw allow 80/tcp
+        ufw allow 443/tcp
     else
-        sudo ufw --force enable && sudo ufw allow OpenSSH && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp
+        sudo ufw --force enable
+        sudo ufw allow OpenSSH
+        sudo ufw allow 80/tcp
+        sudo ufw allow 443/tcp
     fi
+    
     log_success "Firewall konfiguriert"
 }
 
-# Node.js
-install_nodejs() {
-    log_info "Installiere Node.js 20..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
-    ${IS_ROOT} && apt install -y nodejs > /dev/null 2>&1 || sudo apt install -y nodejs > /dev/null 2>&1
-    npm install -g pnpm > /dev/null 2>&1
-    log_success "Node.js $(node -v) & pnpm installiert"
+# Deploy User erstellen
+create_deploy_user() {
+    if [ "$IS_ROOT" = true ]; then
+        log_info "Erstelle Deploy-User..."
+        
+        if id "deploy" &>/dev/null; then
+            log_warning "User 'deploy' existiert bereits"
+        else
+            adduser --disabled-password --gecos "" deploy
+            usermod -aG sudo deploy
+            log_success "Deploy-User erstellt"
+        fi
+    fi
 }
 
-# PostgreSQL
+# Node.js installieren
+install_nodejs() {
+    log_info "Installiere Node.js 20 LTS..."
+    
+    # NodeSource Repository
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
+    
+    if [ "$IS_ROOT" = true ]; then
+        apt install -y nodejs > /dev/null 2>&1
+    else
+        sudo apt install -y nodejs > /dev/null 2>&1
+    fi
+    
+    # pnpm installieren
+    npm install -g pnpm > /dev/null 2>&1
+    
+    NODE_VERSION=$(node --version)
+    PNPM_VERSION=$(pnpm --version)
+    
+    log_success "Node.js $NODE_VERSION & pnpm $PNPM_VERSION installiert"
+}
+
+# PostgreSQL installieren
 install_postgresql() {
     log_info "Installiere PostgreSQL..."
-    ${IS_ROOT} && apt install -y postgresql postgresql-contrib > /dev/null 2>&1 && systemctl start postgresql && systemctl enable postgresql || sudo apt install -y postgresql postgresql-contrib > /dev/null 2>&1 && sudo systemctl start postgresql && sudo systemctl enable postgresql
+    
+    if [ "$IS_ROOT" = true ]; then
+        apt install -y postgresql postgresql-contrib > /dev/null 2>&1
+        systemctl start postgresql
+        systemctl enable postgresql
+    else
+        sudo apt install -y postgresql postgresql-contrib > /dev/null 2>&1
+        sudo systemctl start postgresql
+        sudo systemctl enable postgresql
+    fi
+    
     log_success "PostgreSQL installiert"
 }
 
-# DB Setup
+# Datenbank konfigurieren
 setup_database() {
-    log_info "Setup Datenbank..."
+    log_info "Konfiguriere Datenbank..."
+    
+    # Generiere sicheres Passwort
     DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
-    ${IS_ROOT} && sudo -u postgres psql << EOF > /dev/null 2>&1 || sudo -u postgres psql << EOF > /dev/null 2>&1
+    
+    # Datenbank erstellen
+    if [ "$IS_ROOT" = true ]; then
+        sudo -u postgres psql << EOF > /dev/null 2>&1
 CREATE USER webprojekte WITH PASSWORD '$DB_PASSWORD';
 CREATE DATABASE webprojekte OWNER webprojekte;
 GRANT ALL PRIVILEGES ON DATABASE webprojekte TO webprojekte;
 EOF
+    else
+        sudo -u postgres psql << EOF > /dev/null 2>&1
+CREATE USER webprojekte WITH PASSWORD '$DB_PASSWORD';
+CREATE DATABASE webprojekte OWNER webprojekte;
+GRANT ALL PRIVILEGES ON DATABASE webprojekte TO webprojekte;
+EOF
+    fi
+    
+    # Speichere DB-Credentials
     echo "DATABASE_URL=\"postgresql://webprojekte:$DB_PASSWORD@localhost:5432/webprojekte\"" > /tmp/db_credentials.txt
-    log_success "DB konfiguriert"
+    
+    log_success "Datenbank konfiguriert"
+    log_info "DB-Passwort: $DB_PASSWORD (gespeichert in /tmp/db_credentials.txt)"
 }
 
-# PM2
-install_pm2() {
-    log_info "Installiere PM2..."
-    npm install -g pm2 > /dev/null 2>&1
-    log_success "PM2 installiert"
-}
-
-# Nginx
+# Nginx installieren
 install_nginx() {
     log_info "Installiere Nginx..."
-    ${IS_ROOT} && apt install -y nginx certbot python3-certbot-nginx > /dev/null 2>&1 && systemctl start nginx && systemctl enable nginx || sudo apt install -y nginx certbot python3-certbot-nginx > /dev/null 2>&1 && sudo systemctl start nginx && sudo systemctl enable nginx
+    
+    if [ "$IS_ROOT" = true ]; then
+        apt install -y nginx certbot python3-certbot-nginx > /dev/null 2>&1
+        systemctl start nginx
+        systemctl enable nginx
+    else
+        sudo apt install -y nginx certbot python3-certbot-nginx > /dev/null 2>&1
+        sudo systemctl start nginx
+        sudo systemctl enable nginx
+    fi
+    
     log_success "Nginx installiert"
 }
 
-# Clone App
-clone_application() {
-    log_info "Clone Repository..."
-    TARGET="/home/${USER}/webprojekte-verkauf-system"
-    [ -d "$TARGET" ] && log_warning "Verzeichnis existiert" || git clone https://github.com/Tech-lab-sys/webprojekte-verkauf-system.git "$TARGET" > /dev/null 2>&1
-    log_success "Repository geklont"
+# PM2 installieren
+install_pm2() {
+    log_info "Installiere PM2..."
+    
+    npm install -g pm2 > /dev/null 2>&1
+    
+    log_success "PM2 installiert"
 }
 
-# Dependencies
+# Application klonen
+clone_application() {
+    log_info "Klone Application von GitHub..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    
+    if [ -d "$TARGET_DIR" ]; then
+        log_warning "Verzeichnis existiert bereits, überspringe Klonen"
+    else
+        git clone https://github.com/Tech-lab-sys/webprojekte-verkauf-system.git "$TARGET_DIR" > /dev/null 2>&1
+        log_success "Application geklont nach $TARGET_DIR"
+    fi
+}
+
+# Dependencies installieren
 install_dependencies() {
-    log_info "Installiere Dependencies..."
-    cd "/home/${USER}/webprojekte-verkauf-system"
+    log_info "Installiere Application Dependencies..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    cd "$TARGET_DIR"
+    
     pnpm install > /dev/null 2>&1
+    
     log_success "Dependencies installiert"
 }
 
-# Prisma Setup
+# .env Template erstellen
+create_env_template() {
+    log_info "Erstelle .env.local Template..."
+
+    # Prisma Setup
 setup_prisma() {
-    log_info "Setup Prisma..."
-    cd "/home/${USER}/webprojekte-verkauf-system"
+    log_info "Konfiguriere Prisma & Datenbank Schema..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    cd "$TARGET_DIR"
+    
+    # Prisma Schema in Datenbank pushen
     pnpm db:push > /dev/null 2>&1
-    [ -f "prisma/seed.ts" ] && pnpm db:seed > /dev/null 2>&1 || true
+    
+    # Seed-Daten einfügen
+    if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
+        pnpm db:seed > /dev/null 2>&1 || true
+    fi
+    
     log_success "Prisma konfiguriert"
 }
 
-# .env
-create_env() {
-    log_info "Erstelle .env.local..."
-    cd "/home/${USER}/webprojekte-verkauf-system"
+# Application starten
+start_application() {
+    log_info "Starte Application mit PM2..."
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    cd "$TARGET_DIR"
+    
+    # Im Dev-Mode starten (Build hat Fehler)
+    pm2 start "pnpm dev" --name webprojekte-verkauf
+    pm2 save
+    
+    # PM2 Auto-Start einrichten
+    pm2 startup systemd -u ${USER} --hp /home/${USER} > /dev/null 2>&1 || true
+    
+    log_success "Application gestartet"
+}
+    
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    
+    # Lese DB-Credentials
     DB_URL=$(cat /tmp/db_credentials.txt)
-    cat > .env.local << EOF
+    
+    cat > "$TARGET_DIR/.env.local" << EOF
+# Datenbank
 $DB_URL
-STRIPE_SECRET_KEY="sk_test_DEIN_KEY"
-STRIPE_WEBHOOK_SECRET="whsec_DEIN_SECRET"
-PERPLEXITY_API_KEY="pplx_DEIN_KEY"
-NEXT_PUBLIC_APP_URL="http://${DOMAIN}:3000"
+
+# Stripe (KONFIGURIERE DIESE!)
+STRIPE_SECRET_KEY="sk_test_DEIN_KEY_HIER"
+STRIPE_WEBHOOK_SECRET="whsec_DEIN_SECRET_HIER"
+
+# Perplexity AI (KONFIGURIERE DIESE!)
+PERPLEXITY_API_KEY="pplx_DEIN_KEY_HIER"
+
+# OpenAI (Fallback - Optional)
+OPENAI_API_KEY="sk-DEIN_KEY_HIER"
+
+# Email SMTP
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="deine-email@gmail.com"
+SMTP_PASS="dein-app-passwort"
+
+# Storage (Lokal auf VPS)
+USE_S3_STORAGE="false"
+
+# Application
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NODE_ENV="production"
 PORT="3000"
 EOF
+    
     log_success ".env.local erstellt"
+    log_warning "WICHTIG: Editiere .env.local und füge deine API Keys ein!"
 }
 
-# Nginx Config
-create_nginx_config() {
-    log_info "Nginx Config für $DOMAIN..."
-    CONFIG="/etc/nginx/sites-available/webprojekte"
-    ${IS_ROOT} && cat > "$CONFIG" << 'NGINX' || sudo bash -c "cat > $CONFIG" << 'NGINX'
-server {
-    listen 80;
-    server_name DOMAIN_PLACEHOLDER www.DOMAIN_PLACEHOLDER;
-    client_max_body_size 500M;
+# PM2 Ecosystem erstellen
+create_pm2_config() {
+    log_info "Erstelle PM2 Konfiguration..."
     
+    TARGET_DIR="/home/${USER}/webprojekte-verkauf-system"
+    
+    cat > "$TARGET_DIR/ecosystem.config.js" << 'EOF'
+module.exports = {
+  apps: [{
+    name: 'webprojekte-verkauf',
+    script: 'npm',
+    args: 'start',
+    cwd: '/home/deploy/webprojekte-verkauf-system',
+    instances: 2,
+    exec_mode: 'cluster',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    },
+    error_file: '/home/deploy/logs/err.log',
+    out_file: '/home/deploy/logs/out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+    autorestart: true,
+    max_memory_restart: '1G'
+  }]
+};
+EOF
+    
+    # Logs Verzeichnis
+    mkdir -p /home/${USER}/logs
+    
+    log_success "PM2 Config erstellt"
+}
+
+# Nginx Config erstellen
+create_nginx_config() {
+    log_info "Erstelle Nginx Konfiguration..."
+        
+    if [ "$IS_ROOT" = true ]; then
+        cat > /etc/nginx/sites-available/webprojekte << EOF
+    # Domain aus Umgebungsvariable oder interaktiv abfragen
+    if [ -z "$DOMAIN" ]; then
+        if [ -t 0 ]; then
+            # STDIN ist ein Terminal, interaktive Eingabe möglich
+            read -p "Domain eingeben (z.B. example.com): " DOMAIN
+        else
+            # Nicht-interaktiv (pipe), verwende localhost als Default
+            log_warning "Keine Domain angegeben, verwende localhost"
+            DOMAIN="localhost"
+        fi
+    fi
+    
+    log_info "Konfiguriere Nginx für Domain: $DOMAIN"    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+
+    client_max_body_size 500M;
+
     location / {
         proxy_pass http://localhost:3000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+        
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
     }
 }
-NGINX
-NGINX
-    ${IS_ROOT} && sed -i "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" "$CONFIG" || sudo sed -i "s/DOMAIN_PLACEHOLDER/$DOMAIN/g" "$CONFIG"
-    ${IS_ROOT} && ln -sf "$CONFIG" /etc/nginx/sites-enabled/ && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl reload nginx || sudo ln -sf "$CONFIG" /etc/nginx/sites-enabled/ && sudo rm -f /etc/nginx/sites-enabled/default && sudo nginx -t && sudo systemctl reload nginx
-    log_success "Nginx konfiguriert"
+EOF
+        
+        ln -sf /etc/nginx/sites-available/webprojekte /etc/nginx/sites-enabled/
+        rm -f /etc/nginx/sites-enabled/default
+        nginx -t && systemctl reload nginx
+        
+        log_success "Nginx konfiguriert für $DOMAIN"
+    else
+        sudo bash -c "cat > /etc/nginx/sites-available/webprojekte << EOF
+server {
+    listen 80;
+    server_name $DOMAIN www.$DOMAIN;
+
+    client_max_body_size 500M;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \\\$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \\\$host;
+        proxy_cache_bypass \\\$http_upgrade;
+    }
+}
+EOF"
+        
+        sudo ln -sf /etc/nginx/sites-available/webprojekte /etc/nginx/sites-enabled/
+        sudo rm -f /etc/nginx/sites-enabled/default
+        sudo nginx -t && sudo systemctl reload nginx
+        
+        log_success "Nginx konfiguriert für $DOMAIN"
+    fi
 }
 
-# Start App
-start_application() {
-    log_info "Starte App mit PM2..."
-    cd "/home/${USER}/webprojekte-verkauf-system"
-    pm2 start "pnpm dev" --name webprojekte-verkauf
-    pm2 save
-    pm2 startup systemd -u "${USER}" --hp "/home/${USER}" > /dev/null 2>&1 || true
-    log_success "App gestartet"
-}
-
-# Summary
+# Abschluss-Informationen
 print_summary() {
     echo ""
-    cat << EOF
-${GREEN}════════════════════════════════════════════════${NC}
-${GREEN}✓ Installation erfolgreich!${NC}
-${GREEN}════════════════════════════════════════════════${NC}
+    cat << EOF${GREEN}✓ Installation erfolgreich abgeschlossen!${NC}
+${GREEN}═══════════════════════════════════════════════════════════════════${NC}
 
-${BLUE}📋 Komponenten:${NC}
+${BLUE}📋 Installierte Komponenten:${NC}
   ✓ Node.js $(node -v)
   ✓ PostgreSQL
-  ✓ Nginx
-  ✓ PM2
+  ✓ Nginx Reverse Proxy
+  ✓ PM2 Process Manager
+  ✓ UFW Firewall
 
 ${BLUE}🌐 Zugriff:${NC}
-  → http://${DOMAIN}
+  → https://$DOMAIN
+  → http://$DOMAIN (Weiterleitung zu HTTPS)
 
-${BLUE}📁 Pfad:${NC}
-  → /home/${USER}/webprojekte-verkauf-system
+${BLUE}📁 Installationspfad:${NC}
+  → /home/deploy/webprojekte-verkauf-system
 
-${BLUE}🔑 DB-Credentials:${NC}
-  → /tmp/db_credentials.txt
+${BLUE}🔑 Datenbank-Credentials:${NC}
+  → Gespeichert in: /tmp/db_credentials.txt
+  → Bitte sichern und löschen!
 
-${BLUE}📝 Befehle:${NC}
-  pm2 status
-  pm2 logs
-  pm2 restart webprojekte-verkauf
+${BLUE}📝 Nützliche Befehle:${NC}
+  pm2 status              - Status anzeigen
+  pm2 logs               - Logs anzeigen
+  pm2 restart ecosystem  - Neustart
+  pm2 monit             - Monitoring
 
 ${YELLOW}⚠️  Wichtig:${NC}
-  1. Sichere DB-Credentials
-  2. Editiere .env.local mit API Keys
-  3. Starte neu: pm2 restart webprojekte-verkauf
+  1. Sichere die DB-Credentials aus /tmp/db_credentials.txt
+  2. Lösche die Datei nach dem Sichern
+  3. SSL-Zertifikat kann jederzeit mit Certbot erneuert werden
 
-${GREEN}Viel Erfolg! 🚀${NC}
+${GREEN}Viel Erfolg mit deinem Webprojekte-Verkaufs-System! 🚀${NC}
 EOF
 }
 
-# Main
+# Main Installation
 main() {
-    log_info "Start Installation..."
+    log_info "Starte Smart Installer..."
+    
     check_system
-    update_system
+        update_system
     install_essentials
     setup_firewall
+    create_deploy_user
     install_nodejs
     install_postgresql
     setup_database
-        install_pm2
-    install_nginx
+    install_pm2
     clone_application
     install_dependencies
+    create_env_template
+    create_pm2_config
+install_nginx
+
     setup_prisma
-    create_env
     create_nginx_config
-    start_application
+        start_application
+    
     print_summary
 }
 
+# Start installation
 print_banner
 main
