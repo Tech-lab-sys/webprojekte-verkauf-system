@@ -311,7 +311,7 @@ setup_prisma() {
     cd "$TARGET_DIR"
     
     # Prisma Schema in Datenbank pushen
-    pnpm db:push > /dev/null 2>&1
+    pnpm db:push > /dev/null 2>&1 || true
     
     # Seed-Daten einfügen
     if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
@@ -329,8 +329,8 @@ start_application() {
     cd "$TARGET_DIR"
     
     # Im Dev-Mode starten (Build hat Fehler)
-    pm2 start "pnpm dev" --name webprojekte-verkauf
-    pm2 save
+    pm2 start "pnpm dev" --name webprojekte-verkauf || true
+    pm2 save || true
     
     # PM2 Auto-Start einrichten
     pm2 startup systemd -u ${USER} --hp /home/${USER} > /dev/null 2>&1 || true
