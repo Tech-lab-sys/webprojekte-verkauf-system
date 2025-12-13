@@ -12,6 +12,8 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: true,
+    allowedHosts: ['aquatitan.ch', 'www.aquatitan.ch', 'localhost'],
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
