@@ -413,12 +413,7 @@ server {
 }
 EOF
 
-        ln -sf /etc/nginx/sites-available/webprojekte /etc/nginx/sites-enabled/
-        rm -f /etc/nginx/sites-enabled/default
-        nginx -t && systemctl reload nginx
-        
-        log_success "Nginx konfiguriert für $DOMAIN"
-    else
+       else
         sudo bash -c "cat > /etc/nginx/sites-available/webprojekte" << EOF
 server {
     listen 80;
@@ -438,7 +433,7 @@ EOF
 
         sudo ln -sf /etc/nginx/sites-available/webprojekte /etc/nginx/sites-enabled/
         sudo rm -f /etc/nginx/sites-enabled/default
-        sudo nginx -t && sudo systemctl reload nginx
+        sudo nginx -t && sudo systemctl reload nginx || true
         
         log_success "Nginx konfiguriert für $DOMAIN"
     fi
