@@ -7,6 +7,7 @@ function App() {
   const [primaryColor, setPrimaryColor] = useState('#6366f1'); // Default to indigo
   const [loading, setLoading] = useState(false);
   const [offer, setOffer] = useState<any>(null);
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
 
   const handleGenerateOffer = async () => {
     if (!niche) {
@@ -135,9 +136,26 @@ function App() {
         </div>
 
         {/* Live Preview Panel */}
-        <div className="lg:w-2/3 flex flex-col gap-8">
+        <div className="lg:w-2/3 flex flex-col gap-8 items-center">
+
+          {/* Device Toggle */}
+          <div className="flex bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/20">
+            <button
+              onClick={() => setPreviewMode('desktop')}
+              className={`px-6 py-2 rounded-full font-semibold transition-all text-sm ${previewMode === 'desktop' ? 'bg-white text-slate-900 shadow-md' : 'text-gray-300 hover:text-white'}`}
+            >
+              💻 Desktop
+            </button>
+            <button
+              onClick={() => setPreviewMode('mobile')}
+              className={`px-6 py-2 rounded-full font-semibold transition-all text-sm ${previewMode === 'mobile' ? 'bg-white text-slate-900 shadow-md' : 'text-gray-300 hover:text-white'}`}
+            >
+              📱 Mobile
+            </button>
+          </div>
+
           {/* Visual Mockup */}
-          <div className="flex-grow bg-white rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 flex flex-col">
+          <div className={`transition-all duration-500 ease-in-out ${previewMode === 'mobile' ? 'w-[375px] h-[812px]' : 'w-full h-auto flex-grow'} bg-white rounded-3xl overflow-hidden shadow-2xl border-4 border-white/10 flex flex-col`}>
             {/* Browser Header */}
             <div className="bg-gray-200 px-4 py-3 flex items-center gap-2 border-b border-gray-300">
                <div className="w-3 h-3 rounded-full bg-red-400"></div>
@@ -155,19 +173,25 @@ function App() {
                   <div className="absolute top-4 left-4 font-bold text-xl" style={{color: primaryColor}}>
                     {niche || 'Logo'}
                   </div>
-                  <div className="absolute top-4 right-4 flex gap-4 text-sm font-semibold text-gray-600">
-                    <span>Home</span>
-                    <span>Über uns</span>
-                    <span>Kontakt</span>
-                  </div>
+                  {previewMode === 'desktop' ? (
+                    <div className="absolute top-4 right-4 flex gap-4 text-sm font-semibold text-gray-600">
+                      <span>Home</span>
+                      <span>Über uns</span>
+                      <span>Kontakt</span>
+                    </div>
+                  ) : (
+                    <div className="absolute top-4 right-4 text-gray-600">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </div>
+                  )}
 
                   <h1 className="text-4xl font-extrabold text-gray-900 mb-4 max-w-2xl leading-tight">
                     {websiteType === 'BUSINESS' ? `Professionelle Lösung für ${niche || 'Ihr Business'}` :
                      websiteType === 'AI_BLOG' ? `Alles über ${niche || 'Interessante Themen'}` :
                      `Die besten Angebote für ${niche || 'Dich'}`}
                   </h1>
-                  <p className="text-gray-600 max-w-lg mb-6">
-                    {theme} Theme Layout • Optimiert für Conversions • Responsive Design
+                  <p className="text-gray-600 max-w-lg mb-6 text-sm px-4">
+                    {theme} Theme Layout • 100% Mobile Responsive • Optimiert für Affiliate & Conversions
                   </p>
                   <button className="px-8 py-3 rounded-full text-white font-bold shadow-lg" style={{backgroundColor: primaryColor}}>
                     Jetzt Starten
@@ -175,14 +199,18 @@ function App() {
                </div>
 
                {/* Mock Content Sections */}
-               <div className="p-8 flex-grow">
-                 <div className="grid grid-cols-3 gap-6 mb-8">
+               <div className="p-8 flex-grow overflow-y-auto">
+                 <div className={`grid ${previewMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-3'} gap-6 mb-8`}>
                     {[1, 2, 3].map(i => (
-                      <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center">
-                         <div className="w-12 h-12 rounded-full mb-4 opacity-20" style={{backgroundColor: primaryColor}}></div>
-                         <div className="w-24 h-4 bg-gray-200 rounded mb-2"></div>
-                         <div className="w-full h-2 bg-gray-100 rounded mb-1"></div>
-                         <div className="w-3/4 h-2 bg-gray-100 rounded"></div>
+                      <div key={i} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center text-center transition-transform hover:scale-105">
+                         <div className="w-16 h-16 rounded-full mb-4 opacity-20 flex items-center justify-center" style={{backgroundColor: primaryColor}}>
+                           <div className="w-8 h-8 rounded-full" style={{backgroundColor: primaryColor}}></div>
+                         </div>
+                         <div className="w-32 h-4 bg-gray-200 rounded mb-4"></div>
+                         <div className="w-full h-2 bg-gray-100 rounded mb-2"></div>
+                         <div className="w-5/6 h-2 bg-gray-100 rounded mb-2"></div>
+                         <div className="w-4/6 h-2 bg-gray-100 rounded mb-6"></div>
+                         <button className="px-6 py-2 rounded-lg text-sm font-semibold text-white shadow-md w-full" style={{backgroundColor: primaryColor}}>Mehr erfahren</button>
                       </div>
                     ))}
                  </div>
@@ -192,14 +220,14 @@ function App() {
 
           {/* Offer Results */}
           {offer && (
-            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-green-500/30">
+            <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 border border-green-500/30 w-full mt-4">
                <h3 className="text-xl font-bold mb-4 text-green-400">✅ Angebot generiert</h3>
                <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <h4 className="font-bold text-lg mb-2">{offer.title}</h4>
                     <p className="text-gray-300 text-sm mb-4 line-clamp-3">{offer.description}</p>
                     <ul className="text-sm space-y-2">
-                       {offer.highlights?.slice(0,3).map((h: string, i: number) => (
+                       {(offer.features || offer.highlights)?.slice(0,3).map((h: string, i: number) => (
                          <li key={i} className="flex gap-2"><span className="text-green-400">✓</span> {h}</li>
                        ))}
                     </ul>

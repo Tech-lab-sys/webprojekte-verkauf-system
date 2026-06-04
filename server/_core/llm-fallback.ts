@@ -89,6 +89,8 @@ async function generateOfferWithOpenAI(request: LLMOfferRequest): Promise<Omit<L
 
   const prompt = `Erstelle ein professionelles Verkaufsangebot für eine ${type} WordPress Website in der Nische "${niche}".
 
+Betone dabei besonders, dass die erstellten Websites 100% mobilfreundlich (responsive) sind und auf allen Endgeräten (Smartphones, Tablets) perfekt und schnell laden. Für Affiliate und Business Websites ist dies essenziell.
+
 Zielgruppe: ${targetAudience || 'Allgemein'}
 Features: ${features.join(', ') || 'Standard Features'}
 
