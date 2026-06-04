@@ -61,7 +61,7 @@ export async function createCheckoutHandler(req: Request, res: Response): Promis
         checkoutUrl,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler bei Checkout Erstellung:', error);
     
     // Spezifische Fehlerbehandlung

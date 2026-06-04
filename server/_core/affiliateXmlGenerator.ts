@@ -48,7 +48,7 @@ export async function generateAffiliateProducts(config: AffiliateConfig): Promis
   const products: AffiliateProduct[] = [];
 
   // Nischen-basierte Produkt-Generierung
-  const nicheProducts = {
+  const nicheProducts: Record<string, any[]> = {
     versicherung: [
       { name: 'Kfz-Versicherung Vergleich', category: 'kfz-versicherung', vertical: 'kfz' },
       { name: 'Krankenversicherung', category: 'krankenversicherung', vertical: 'kranken' },

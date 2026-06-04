@@ -1,6 +1,7 @@
+import { Website } from "@prisma/client";
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import { Website } from '@prisma/client';
+
 
 // Email Konfiguration aus Umgebungsvariablen
 const transporter: Transporter = nodemailer.createTransport({
@@ -36,7 +37,7 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
       attachments: options.attachments,
     });
     console.log(`Email gesendet an ${options.to}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler beim Email Versand:', error);
     throw new Error(`Email konnte nicht versendet werden: ${error.message}`);
   }
@@ -269,7 +270,7 @@ export async function testEmailConfiguration(): Promise<boolean> {
     await transporter.verify();
     console.log('Email Konfiguration erfolgreich getestet');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Email Konfiguration fehlerhaft:', error);
     return false;
   }

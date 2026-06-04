@@ -1,6 +1,8 @@
 import Stripe from 'stripe';
+
+import { PaymentStatus } from "@prisma/client";
 import { prisma } from './db';
-import { Website, PaymentStatus } from '@prisma/client';
+
 import { sendPurchaseConfirmation, sendAdminNotification } from './emailService';
 import { generateWordPressBundle } from './bundleGenerator';
 
@@ -75,7 +77,7 @@ export async function createCheckoutSession(
     });
 
     return session.url!;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler bei Checkout Session Erstellung:', error);
     throw new Error(`Checkout Session konnte nicht erstellt werden: ${error.message}`);
   }
@@ -94,7 +96,7 @@ export async function handleStripeWebhook(
 
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Webhook Signatur Verifikation fehlgeschlagen:', error);
     throw new Error('Webhook Signatur ungültig');
   }
@@ -175,7 +177,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     await sendAdminNotification(website, customerEmail);
 
     console.log(`Website ${websiteId} erfolgreich verkauft an ${customerEmail}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler bei Checkout Completion Handler:', error);
     // Hier könnte man einen Retry Mechanismus implementieren
   }
@@ -222,7 +224,7 @@ export async function createDiscountCoupon(
 
     console.log(`Coupon erstellt: ${code} (${percentOff}% Rabatt)`);
     return coupon;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler bei Coupon Erstellung:', error);
     throw new Error(`Coupon konnte nicht erstellt werden: ${error.message}`);
   }
@@ -235,7 +237,7 @@ export async function validateCoupon(code: string): Promise<boolean> {
   try {
     const coupon = await stripe.coupons.retrieve(code.toUpperCase());
     return coupon.valid;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Coupon nicht gefunden:', error);
     return false;
   }
@@ -309,7 +311,7 @@ export async function createCheckoutSessionWithCoupon(
     });
 
     return session.url!;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler bei Checkout Session mit Coupon:', error);
     throw new Error(`Checkout Session konnte nicht erstellt werden: ${error.message}`);
   }

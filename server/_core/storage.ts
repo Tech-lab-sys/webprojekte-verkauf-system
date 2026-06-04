@@ -182,7 +182,7 @@ export async function downloadFile(key: string, targetPath: string): Promise<voi
       await fs.ensureDir(path.dirname(targetPath));
       // @ts-ignore
       const chunks: Buffer[] = [];
-      for await (const chunk of body) {
+      for await (const chunk of body as any) {
         chunks.push(chunk);
       }
       await fs.writeFile(targetPath, Buffer.concat(chunks));

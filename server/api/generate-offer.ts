@@ -1,7 +1,9 @@
 import type { Request, Response } from 'express';
 import { generateOffer } from '../_core/perplexity';
+
+import { WebsiteType } from "@prisma/client";
 import { prisma } from '../_core/db';
-import { WebsiteType } from '@prisma/client';
+
 
 /**
  * POST /api/generate-offer
@@ -55,7 +57,7 @@ export async function generateOfferHandler(req: Request, res: Response): Promise
         ...offer,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler bei Offer Generierung:', error);
     res.status(500).json({
       success: false,
