@@ -8,6 +8,7 @@ datasource db {
 }
 
 model Package {
+  websites      Website[]
   id          String   @id @default(cuid())
   name        String
   type        String   // "affiliate", "ai-blog", "business"
@@ -98,4 +99,58 @@ model Analytics {
   @@index([event])
   @@index([packageId])
   @@index([createdAt])
+}
+
+enum WebsiteType {
+  AFFILIATE
+  AI_BLOG
+  BUSINESS
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Website {
+  id                  String   @id @default(cuid())
+  type                WebsiteType
+  niche               String
+  title               String
+  description         String
+  features            String[]
+  price               Float
+  technicalStack      String[]
+  estimatedSetupTime  String
+  affiliateLinks      String[]
+  previewImage        String?
+  sold                Boolean  @default(false)
+  soldAt              DateTime?
+  soldTo              String?
+  bundlePath          String?
+
+  payments            Payment[]
+
+  packageId           String?
+  package             Package? @relation(fields: [packageId], references: [id])
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model Payment {
+  id                  String   @id @default(cuid())
+  websiteId           String
+  website             Website  @relation(fields: [websiteId], references: [id])
+  stripeSessionId     String   @unique
+  amount              Float
+  currency            String   @default("EUR")
+  status              PaymentStatus
+  customerEmail       String
+  paidAt              DateTime?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }

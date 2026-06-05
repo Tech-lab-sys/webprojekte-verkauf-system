@@ -1,6 +1,6 @@
-import { generateOfferWithPerplexity } from './perplexity';
+import { WebsiteType } from "@prisma/client";
+import { generateOffer } from './perplexity';
 import OpenAI from 'openai';
-import { WebsiteType } from '@prisma/client';
 
 // OpenAI Fallback Client
 const openai = new OpenAI({
@@ -40,7 +40,7 @@ export async function generateOfferWithFallback(
     try {
       console.log(`🤖 Attempt ${attempt}/${maxRetries}: Trying Perplexity...`);
 
-      const result = await generateOfferWithPerplexity(request);
+      const result = await generateOffer(request.type, 100); // 100 is base price
 
       console.log('✅ Perplexity successful!');
       return {
@@ -88,6 +88,8 @@ async function generateOfferWithOpenAI(request: LLMOfferRequest): Promise<Omit<L
   const { type, niche, targetAudience, features = [] } = request;
 
   const prompt = `Erstelle ein professionelles Verkaufsangebot für eine ${type} WordPress Website in der Nische "${niche}".
+
+Betone dabei besonders, dass die erstellten Websites 100% mobilfreundlich (responsive) sind und auf allen Endgeräten (Smartphones, Tablets) perfekt und schnell laden. Für Affiliate und Business Websites ist dies essenziell.
 
 Zielgruppe: ${targetAudience || 'Allgemein'}
 Features: ${features.join(', ') || 'Standard Features'}
@@ -158,10 +160,7 @@ export async function checkLLMHealth(): Promise<{
 
   // Test Perplexity
   try {
-    await generateOfferWithPerplexity({
-      type: 'AFFILIATE',
-      niche: 'test',
-    });
+    await generateOffer("AFFILIATE", 100); // 100 is base price
     results.perplexity = true;
     results.recommendation = 'perplexity';
   } catch (error) {

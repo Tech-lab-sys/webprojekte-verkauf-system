@@ -23,7 +23,7 @@ export async function webhookHandler(req: Request, res: Response): Promise<void>
 
     // Stripe erwartet 200 Response
     res.status(200).json({ received: true });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Webhook Verarbeitungsfehler:', error);
     
     if (error.message.includes('Signatur')) {

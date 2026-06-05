@@ -27,7 +27,7 @@ export interface PerplexityResponse {
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
-  const prompt = `Generate a sales offer for a ${packageType} website package.
+  const prompt = `Generate a sales offer for a ${packageType} website package. Focus on highlighting that the website is 100% mobile responsive, optimized for all devices, and includes fast-loading layouts perfect for modern marketing and affiliate conversions.
 Base price: ${basePrice}€
 
 Return JSON with:

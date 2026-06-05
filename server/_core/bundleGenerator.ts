@@ -1,14 +1,16 @@
 import AdmZip from 'adm-zip';
 import fs from 'fs-extra';
 import path from 'path';
-import { Website, WebsiteType } from '@prisma/client';
+
+
+import { WebsiteType } from "@prisma/client";
 import { prisma } from './db';
 
 // Template Dateien für WordPress Bundles
 const TEMPLATE_DIR = path.join(process.cwd(), 'templates');
 const OUTPUT_DIR = path.join(process.cwd(), 'bundles');
 
-interface BundleConfig {
+export interface BundleConfig {
   websiteId: string;
   type: WebsiteType;
   niche: string;
@@ -155,7 +157,7 @@ async function addBusinessContent(zip: AdmZip, niche: string): Promise<void> {
 /**
  * Fügt Konfigurationsdateien hinzu
  */
-async function addConfigFiles(zip: AdmZip, config: BundleConfig): Promise<void> {
+async function addConfigFiles(zip: AdmZip, _config: BundleConfig): Promise<void> {
   // wp-config.php Template
   const wpConfigTemplate = `<?php
 define('DB_NAME', 'your_database_name');
@@ -260,8 +262,8 @@ Viel Erfolg! 🚀
 /**
  * Fügt SQL Import Datei hinzu
  */
-async function addDatabaseImport(zip: AdmZip, config: BundleConfig): Promise<void> {
-  const { type, niche } = config;
+async function addDatabaseImport(zip: AdmZip, _config: BundleConfig): Promise<void> {
+  const { type } = _config;
 
   const sqlContent = `-- WordPress ${type} Database Export
 -- Generiert am: ${new Date().toISOString()}
@@ -322,7 +324,7 @@ export async function createBundleForWebsite(websiteId: string): Promise<string>
     websiteId: website.id,
     type: website.type,
     niche: website.niche,
-    plugins: ['aawp', 'rank-math', 'wp-rocket'], // Standard Plugins
+    plugins: ['aawp', 'rank-math', 'wp-rocket', 'elementor'], // Standard Plugins
     theme: website.package?.name.toLowerCase() || 'default'
   };
 
