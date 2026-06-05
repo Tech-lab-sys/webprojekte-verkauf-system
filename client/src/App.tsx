@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 function App() {
   const [websiteType, setWebsiteType] = useState<'AFFILIATE' | 'AI_BLOG' | 'BUSINESS'>('AFFILIATE');
+  const [affiliateSubType, setAffiliateSubType] = useState<'PURE_AFFILIATE' | 'BLOG_AFFILIATE'>('PURE_AFFILIATE');
   const [niche, setNiche] = useState('');
   const [theme, setTheme] = useState('Astra');
   const [primaryColor, setPrimaryColor] = useState('#6366f1'); // Default to indigo
@@ -20,7 +21,13 @@ function App() {
       const response = await fetch('/api/generate-offer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: websiteType, niche, theme, primaryColor }),
+        body: JSON.stringify({
+          type: websiteType,
+          affiliateSubType: websiteType === 'AFFILIATE' ? affiliateSubType : undefined,
+          niche,
+          theme,
+          primaryColor
+        }),
       });
 
       const data = await response.json();
@@ -77,6 +84,29 @@ function App() {
                 ))}
               </div>
             </div>
+
+            {/* Affiliate Subtype */}
+            {websiteType === 'AFFILIATE' && (
+              <div className="mb-6 animate-fade-in">
+                <label className="block text-sm font-semibold text-gray-300 mb-3">Affiliate Art</label>
+                <div className="flex flex-col gap-2">
+                  {(['PURE_AFFILIATE', 'BLOG_AFFILIATE'] as const).map((subType) => (
+                    <button
+                      key={subType}
+                      onClick={() => setAffiliateSubType(subType)}
+                      className={`py-2 px-4 text-sm text-left rounded-lg font-medium transition-all duration-300 ${
+                        affiliateSubType === subType
+                          ? 'bg-blue-600/50 border border-blue-500 shadow-sm'
+                          : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-transparent'
+                      }`}
+                    >
+                      {subType === 'PURE_AFFILIATE' && '📊 Reines Affiliate (z.B. CHECK24, Tarifcheck)'}
+                      {subType === 'BLOG_AFFILIATE' && '✍️ Blog mit Affiliate (z.B. Amazon Partner)'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Niche Input */}
             <div className="mb-6">

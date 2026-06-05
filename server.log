@@ -1,0 +1,66 @@
+
+> webprojekte-verkauf-system@1.0.0 dev /app
+> concurrently "pnpm:dev:*"
+
+[client]
+[client] > webprojekte-verkauf-system@1.0.0 dev:client /app
+[client] > vite
+[client]
+[server]
+[server] > webprojekte-verkauf-system@1.0.0 dev:server /app
+[server] > tsx watch server/index.ts
+[server]
+[client] Port 3000 is in use, trying another one...
+[client] Port 3001 is in use, trying another one...
+[client] Port 3002 is in use, trying another one...
+[client] Port 3003 is in use, trying another one...
+[client] Port 3004 is in use, trying another one...
+[client] Port 3005 is in use, trying another one...
+[client]
+[client]   VITE v5.4.21  ready in 461 ms
+[client]
+[client]   ➜  Local:   http://localhost:3006/
+[client]   ➜  Network: http://192.168.0.2:3006/
+[server] ◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+[server] ⏳ Teste Email Konfiguration...
+[server] Email Konfiguration fehlerhaft: Error: Invalid login: 535-5.7.8 Username and Password not accepted. For more information, go to
+[server] 535 5.7.8  https://support.google.com/mail/?p=BadCredentials 46e09a7af769-7e6e7923af1sm5294919a34.20 - gsmtp
+[server]     at SMTPConnection._formatError (/app/node_modules/.pnpm/nodemailer@6.10.1/node_modules/nodemailer/lib/smtp-connection/index.js:809:19)
+[server]     at SMTPConnection._actionAUTHComplete (/app/node_modules/.pnpm/nodemailer@6.10.1/node_modules/nodemailer/lib/smtp-connection/index.js:1588:34)
+[server]     at SMTPConnection.<anonymous> (/app/node_modules/.pnpm/nodemailer@6.10.1/node_modules/nodemailer/lib/smtp-connection/index.js:556:26)
+[server]     at SMTPConnection._processResponse (/app/node_modules/.pnpm/nodemailer@6.10.1/node_modules/nodemailer/lib/smtp-connection/index.js:993:20)
+[server]     at SMTPConnection._onData (/app/node_modules/.pnpm/nodemailer@6.10.1/node_modules/nodemailer/lib/smtp-connection/index.js:774:14)
+[server]     at SMTPConnection._onSocketData (/app/node_modules/.pnpm/nodemailer@6.10.1/node_modules/nodemailer/lib/smtp-connection/index.js:195:44)
+[server]     at TLSSocket.emit (node:events:519:28)
+[server]     at addChunk (node:internal/streams/readable:561:12)
+[server]     at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+[server]     at Readable.push (node:internal/streams/readable:392:5) {
+[server]   code: 'EAUTH',
+[server]   response: '535-5.7.8 Username and Password not accepted. For more information, go to\n' +
+[server]     '535 5.7.8  https://support.google.com/mail/?p=BadCredentials 46e09a7af769-7e6e7923af1sm5294919a34.20 - gsmtp',
+[server]   responseCode: 535,
+[server]   command: 'AUTH PLAIN'
+[server] }
+[server] ⚠️ Email Service nicht konfiguriert
+[server] node:events:497
+[server]       throw er; // Unhandled 'error' event
+[server]       ^
+[server]
+[server] Error: listen EADDRINUSE: address already in use :::3000
+[server]     at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+[server]     at listenInCluster (node:net:1997:12)
+[server]     at Server.listen (node:net:2102:7)
+[server]     at Function.listen (/app/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/application.js:635:24)
+[server]     at startServer (/app/server/index.ts:79:9)
+[server]     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+[server] Emitted 'error' event on Server instance at:
+[server]     at emitErrorNT (node:net:1976:8)
+[server]     at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+[server]   code: 'EADDRINUSE',
+[server]   errno: -98,
+[server]   syscall: 'listen',
+[server]   address: '::',
+[server]   port: 3000
+[server] }
+[server]
+[server] Node.js v22.22.1

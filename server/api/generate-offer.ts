@@ -11,7 +11,7 @@ import { prisma } from '../_core/db';
  */
 export async function generateOfferHandler(req: Request, res: Response): Promise<void> {
   try {
-    const { type, niche } = req.body;
+    const { type, affiliateSubType, niche } = req.body;
 
     // Validierung
     if (!type || !niche) {
@@ -32,8 +32,16 @@ export async function generateOfferHandler(req: Request, res: Response): Promise
       return;
     }
 
+    // Konstruiere erweiterten Typ-String für den LLM Prompt
+    let enhancedType = type;
+    if (type === 'AFFILIATE' && affiliateSubType) {
+      enhancedType = affiliateSubType === 'PURE_AFFILIATE'
+        ? 'Reine Affiliate Vergleichs-Website (z.B. CHECK24, Tarifcheck Style)'
+        : 'Blog Website kombiniert mit Affiliate Marketing (z.B. Amazon PartnerNet Style)';
+    }
+
     // Generiere Angebot mit Perplexity AI
-    const offer = await generateOffer(type, niche);
+    const offer = await generateOffer(enhancedType, niche);
 
     // Speichere Website in Datenbank
     const website = await prisma.website.create({
