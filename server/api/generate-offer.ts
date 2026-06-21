@@ -3,6 +3,10 @@ import { generateOffer } from '../_core/perplexity';
 import { prisma } from '../_core/db';
 import { WebsiteType } from '@prisma/client';
 
+// Simple in-memory cache for generated offers to save LLM API costs and reduce latency
+const offerCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 1000;
+
 /**
  * POST /api/generate-offer
  * Generiert ein KI-basiertes Angebot für eine Website
@@ -30,8 +34,21 @@ export async function generateOfferHandler(req: Request, res: Response): Promise
       return;
     }
 
-    // Generiere Angebot mit Perplexity AI
-    const offer = await generateOffer(type, niche);
+    // Check cache first to avoid redundant LLM calls
+    const cacheKey = `${type}-${niche.toLowerCase().trim()}`;
+    let offer = offerCache.get(cacheKey);
+
+    if (!offer) {
+      // Generiere Angebot mit Perplexity AI
+      offer = await generateOffer(type, niche);
+
+      // Prevent unbounded memory growth
+      if (offerCache.size >= MAX_CACHE_SIZE) {
+        offerCache.clear();
+      }
+
+      offerCache.set(cacheKey, offer);
+    }
 
     // Speichere Website in Datenbank
     const website = await prisma.website.create({
@@ -55,12 +72,12 @@ export async function generateOfferHandler(req: Request, res: Response): Promise
         ...offer,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Fehler bei Offer Generierung:', error);
     res.status(500).json({
       success: false,
       error: 'Angebot konnte nicht generiert werden',
-      details: error.message,
+      details: error.message || String(error),
     });
   }
 }
