@@ -104,9 +104,13 @@ function App() {
 
               {/* Niche Input */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
+                <label htmlFor="niche" className="block text-sm font-semibold text-gray-300 mb-4">
+                  Nische <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="niche"
                   type="text"
+                  required
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
                   placeholder="z.B. Fitness, Reisen, Technologie..."
