@@ -23,10 +23,22 @@ export interface PerplexityResponse {
   };
 }
 
+// Simple bounded in-memory cache for expensive LLM API calls to avoid duplicate identical requests
+// Maps a cache key (e.g., "packageType:basePrice") to the generated offer
+const offerCache = new Map<string, any>();
+const MAX_CACHE_SIZE = 100;
+
 /**
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  // Check cache first to avoid expensive and slow LLM call
+  const cacheKey = `${packageType}:${basePrice}`;
+  if (offerCache.has(cacheKey)) {
+    console.log(`⚡ Cache hit for offer generation: ${cacheKey}`);
+    return offerCache.get(cacheKey);
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -66,7 +78,19 @@ Return JSON with:
     );
 
     const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const parsedOffer = JSON.parse(content || '{}');
+
+    // Store in cache for future requests with basic FIFO eviction policy
+    if (offerCache.size >= MAX_CACHE_SIZE) {
+      // Remove the oldest entry (the first item in the Map's insertion order)
+      const firstKey = offerCache.keys().next().value;
+      if (firstKey) {
+          offerCache.delete(firstKey);
+      }
+    }
+    offerCache.set(cacheKey, parsedOffer);
+
+    return parsedOffer;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');

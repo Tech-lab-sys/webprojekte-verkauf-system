@@ -1,0 +1,3 @@
+## 2024-05-15 - [LLM API Caching]
+**Learning:** Synchronous calls to external LLM APIs (like Perplexity) represent a significant performance bottleneck, often taking seconds to respond. For repetitive inputs (like generating generic offers for common niches), this severely degrades the user experience.
+**Action:** Always consider caching the results of expensive LLM operations, either in-memory or in a database, when the input parameters are identical. This can drop response times from several seconds down to single-digit milliseconds.
