@@ -3,6 +3,22 @@ import axios from 'axios';
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
+// Bounded FIFO Cache for LLM responses
+const MAX_CACHE_SIZE = 100;
+const offerCache = new Map<string, any>();
+const articleCache = new Map<string, string>();
+
+function setCache<T>(cache: Map<string, T>, key: string, value: T) {
+  if (cache.size >= MAX_CACHE_SIZE) {
+    const firstKey = cache.keys().next().value;
+    if (firstKey !== undefined) {
+      cache.delete(firstKey);
+    }
+  }
+  cache.set(key, value);
+}
+
+
 export interface PerplexityMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -27,6 +43,10 @@ export interface PerplexityResponse {
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  const cacheKey = `${packageType}-${basePrice}`;
+  if (offerCache.has(cacheKey)) {
+    return offerCache.get(cacheKey);
+  }
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -66,7 +86,9 @@ Return JSON with:
     );
 
     const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const result = JSON.parse(content || '{}');
+    setCache(offerCache, cacheKey, result);
+    return result;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
@@ -77,6 +99,10 @@ Return JSON with:
  * Generate blog article with Perplexity AI
  */
 export async function generateBlogArticle(topic: string): Promise<string> {
+  if (articleCache.has(topic)) {
+    return articleCache.get(topic)!;
+  }
+
   try {
     const response = await axios.post<PerplexityResponse>(
       PERPLEXITY_API_URL,
@@ -98,7 +124,9 @@ export async function generateBlogArticle(topic: string): Promise<string> {
       }
     );
 
-    return response.data.choices[0]?.message.content || '';
+    const result = response.data.choices[0]?.message.content || '';
+    setCache(articleCache, topic, result);
+    return result;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate article');
