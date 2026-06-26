@@ -82,13 +82,15 @@ function App() {
 
               {/* Website Type Selector */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
-                <div className="grid grid-cols-3 gap-4">
+                <label id="website-type-label" className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
+                <div role="group" aria-labelledby="website-type-label" className="grid grid-cols-3 gap-4">
                   {(['AFFILIATE', 'AI_BLOG', 'BUSINESS'] as const).map((type) => (
                     <button
                       key={type}
+                      type="button"
+                      aria-pressed={websiteType === type}
                       onClick={() => setWebsiteType(type)}
-                      className={`py-4 px-6 rounded-2xl font-semibold transition-all duration-300 ${
+                      className={`py-4 px-6 rounded-2xl font-semibold transition-all duration-300 focus-visible:ring-2 focus-visible:ring-purple-500 focus:outline-none ${
                         websiteType === type
                           ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-purple-500/50 scale-105'
                           : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
@@ -104,8 +106,13 @@ function App() {
 
               {/* Niche Input */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
+                <label htmlFor="niche-input" className="block text-sm font-semibold text-gray-300 mb-4">
+                  Nische <span className="text-red-500" aria-hidden="true">*</span><span className="sr-only"> (Erforderlich)</span>
+                </label>
                 <input
+                  id="niche-input"
+                  required
+                  aria-required="true"
                   type="text"
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
