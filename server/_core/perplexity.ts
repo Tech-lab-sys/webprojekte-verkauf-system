@@ -23,10 +23,20 @@ export interface PerplexityResponse {
   };
 }
 
+// Bounded FIFO Cache
+const MAX_CACHE_SIZE = 100;
+const offerCache = new Map<string, any>();
+const articleCache = new Map<string, string>();
+
 /**
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  const cacheKey = `${packageType}-${basePrice}`;
+  if (offerCache.has(cacheKey)) {
+    return JSON.parse(offerCache.get(cacheKey));
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -65,8 +75,18 @@ Return JSON with:
       }
     );
 
-    const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const content = response.data.choices[0]?.message.content || '{}';
+
+    // Set to cache as string to avoid mutation issues
+    offerCache.set(cacheKey, content);
+    if (offerCache.size > MAX_CACHE_SIZE) {
+      const firstKey = offerCache.keys().next().value;
+      if (firstKey !== undefined) {
+        offerCache.delete(firstKey);
+      }
+    }
+
+    return JSON.parse(content);
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
@@ -77,6 +97,10 @@ Return JSON with:
  * Generate blog article with Perplexity AI
  */
 export async function generateBlogArticle(topic: string): Promise<string> {
+  if (articleCache.has(topic)) {
+    return articleCache.get(topic) || '';
+  }
+
   try {
     const response = await axios.post<PerplexityResponse>(
       PERPLEXITY_API_URL,
@@ -98,7 +122,18 @@ export async function generateBlogArticle(topic: string): Promise<string> {
       }
     );
 
-    return response.data.choices[0]?.message.content || '';
+    const result = response.data.choices[0]?.message.content || '';
+
+    // Set to cache
+    articleCache.set(topic, result);
+    if (articleCache.size > MAX_CACHE_SIZE) {
+      const firstKey = articleCache.keys().next().value;
+      if (firstKey !== undefined) {
+        articleCache.delete(firstKey);
+      }
+    }
+
+    return result;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate article');
