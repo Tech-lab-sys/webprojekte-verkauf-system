@@ -1,0 +1,3 @@
+## 2026-06-26 - Bounded FIFO Cache for External LLM API Calls
+**Learning:** Repeated synchronous calls to external LLM APIs (like Perplexity) introduce significant performance bottlenecks. Without caching, these calls cause unnecessary latency and API costs. However, unbounded caching can lead to memory leaks in long-running node processes.
+**Action:** Implement bounded caching (using a Map with a maximum size limit, acting as a FIFO cache) for synchronous external API endpoints. This prevents memory leaks while drastically reducing redundant requests, optimizing response times, and saving API costs.
