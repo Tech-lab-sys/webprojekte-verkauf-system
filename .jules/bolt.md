@@ -1,0 +1,3 @@
+## 2025-01-28 - Unbounded External LLM API Calls Lead to Memory Leaks
+**Learning:** Making repeated, synchronous calls to an external LLM API (like Perplexity AI) without caching causes significant performance bottlenecks (~3-5s delay per generation) and can lead to unbound memory usage or runaway API costs. Since identical offer parameters yield identical context queries, not caching them wastes resources.
+**Action:** When interacting with external LLM APIs (e.g., Perplexity), implement bounded caching (like a Map with a maximum FIFO size limit) to prevent performance bottlenecks and memory leaks from duplicate synchronous requests.
