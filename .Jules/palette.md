@@ -1,0 +1,3 @@
+## 2026-06-28 - Form Accessibility Learnings
+**Learning:** Custom selector components (like div/button groups mimicking radios) need explicit `role="group"`, `aria-labelledby`, and `aria-pressed` states to be correctly interpreted by screen readers. Additionally, all inputs require explicit `htmlFor` mappings even if they are placed adjacently, and required indicators should have `aria-hidden="true"` so they don't read as "star".
+**Action:** Always apply explicit ARIA group roles and pressed states when creating custom selection UIs that do not use native radio buttons, and strictly enforce explicit label connections with `htmlFor` and `id`.
