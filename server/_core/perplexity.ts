@@ -23,10 +23,39 @@ export interface PerplexityResponse {
   };
 }
 
+// ⚡ Bolt: Cache external LLM API calls to prevent performance bottlenecks
+// and duplicate synchronous requests. Bounded to 100 items to prevent memory leaks.
+const MAX_CACHE_SIZE = 100;
+const llmCache = new Map<string, any>();
+
+function getFromCache<T>(key: string): T | null {
+  if (llmCache.has(key)) {
+    // Return deep copy to prevent downstream mutations
+    return JSON.parse(JSON.stringify(llmCache.get(key)));
+  }
+  return null;
+}
+
+function setInCache(key: string, value: any): void {
+  // Enforce bounded FIFO cache limit
+  if (llmCache.size >= MAX_CACHE_SIZE) {
+    const firstKey = llmCache.keys().next().value;
+    llmCache.delete(firstKey);
+  }
+  // Store deep copy to prevent downstream mutations
+  llmCache.set(key, JSON.parse(JSON.stringify(value)));
+}
+
 /**
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  const cacheKey = `offer_${packageType}_${basePrice}`;
+  const cached = getFromCache<any>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -66,7 +95,9 @@ Return JSON with:
     );
 
     const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const result = JSON.parse(content || '{}');
+    setInCache(cacheKey, result);
+    return result;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
@@ -77,6 +108,12 @@ Return JSON with:
  * Generate blog article with Perplexity AI
  */
 export async function generateBlogArticle(topic: string): Promise<string> {
+  const cacheKey = `article_${topic}`;
+  const cached = getFromCache<string>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   try {
     const response = await axios.post<PerplexityResponse>(
       PERPLEXITY_API_URL,
@@ -98,7 +135,9 @@ export async function generateBlogArticle(topic: string): Promise<string> {
       }
     );
 
-    return response.data.choices[0]?.message.content || '';
+    const result = response.data.choices[0]?.message.content || '';
+    setInCache(cacheKey, result);
+    return result;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate article');
