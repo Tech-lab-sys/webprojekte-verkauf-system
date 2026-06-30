@@ -1,0 +1,3 @@
+## 2025-01-20 - Bounded Caching for External LLM APIs
+**Learning:** External LLM API calls (e.g., Perplexity, OpenAI) are often synchronous and take seconds to complete. Duplicate requests for the same prompt can cause severe performance bottlenecks, tie up backend resources, and incur unnecessary costs. However, unbounded caching can lead to memory leaks, and returning cached object references can cause downstream mutation bugs.
+**Action:** Always implement bounded caching (like a Map with a maximum FIFO size limit) when interacting with external LLM APIs. Always return a deep copy (e.g., via JSON.parse/JSON.stringify) of cached objects to prevent downstream mutations.
