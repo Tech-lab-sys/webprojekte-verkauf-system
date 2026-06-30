@@ -82,13 +82,15 @@ function App() {
 
               {/* Website Type Selector */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
-                <div className="grid grid-cols-3 gap-4">
+                <label id="website-type-label" className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
+                <div role="group" aria-labelledby="website-type-label" className="grid grid-cols-3 gap-4">
                   {(['AFFILIATE', 'AI_BLOG', 'BUSINESS'] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setWebsiteType(type)}
-                      className={`py-4 px-6 rounded-2xl font-semibold transition-all duration-300 ${
+                      aria-pressed={websiteType === type}
+                      disabled={loading}
+                      className={`py-4 px-6 rounded-2xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                         websiteType === type
                           ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-purple-500/50 scale-105'
                           : 'bg-white/5 text-gray-300 hover:bg-white/10 border border-white/10'
@@ -104,13 +106,15 @@ function App() {
 
               {/* Niche Input */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
+                <label htmlFor="niche-input" className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
                 <input
+                  id="niche-input"
                   type="text"
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
+                  disabled={loading}
                   placeholder="z.B. Fitness, Reisen, Technologie..."
-                  className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -136,7 +140,7 @@ function App() {
 
             {/* Results Section */}
             {offer && (
-              <div className="mt-8 backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl animate-fadeIn">
+              <div aria-live="polite" className="mt-8 backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl animate-fadeIn">
                 <h4 className="text-2xl font-bold mb-6 bg-gradient-to-r from-green-300 to-cyan-300 bg-clip-text text-transparent">
                   ✅ Dein Angebot ist fertig!
                 </h4>
