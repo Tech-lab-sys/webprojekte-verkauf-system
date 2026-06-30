@@ -23,10 +23,21 @@ export interface PerplexityResponse {
   };
 }
 
+// Bounded FIFO cache to prevent memory leaks while caching expensive LLM API calls
+const MAX_CACHE_SIZE = 100;
+const offerCache = new Map<string, any>();
+
 /**
  * Generate offer with Perplexity AI
+ * Performance optimization: Implemented bounded caching to avoid duplicate expensive API calls.
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  const cacheKey = `${packageType}-${basePrice}`;
+  if (offerCache.has(cacheKey)) {
+    // Return a deep copy to prevent downstream mutations
+    return JSON.parse(JSON.stringify(offerCache.get(cacheKey)));
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -66,7 +77,17 @@ Return JSON with:
     );
 
     const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const parsedContent = JSON.parse(content || '{}');
+
+    // Manage cache size (FIFO)
+    if (offerCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = offerCache.keys().next().value;
+      offerCache.delete(firstKey);
+    }
+
+    offerCache.set(cacheKey, parsedContent);
+    // Return a deep copy to prevent downstream mutations
+    return JSON.parse(JSON.stringify(parsedContent));
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
