@@ -23,10 +23,47 @@ export interface PerplexityResponse {
   };
 }
 
+class BoundedCache<T> {
+  private cache = new Map<string, T>();
+  constructor(private maxSize: number = 50) {}
+
+  get(key: string): T | undefined {
+    const val = this.cache.get(key);
+    if (val !== undefined) {
+      if (typeof val === 'string') {
+        return val; // No need to deep copy primitive strings
+      }
+      return JSON.parse(JSON.stringify(val));
+    }
+    return undefined;
+  }
+
+  set(key: string, value: T): void {
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) this.cache.delete(firstKey);
+    }
+    let valToStore = value;
+    if (typeof value !== 'string') {
+      valToStore = JSON.parse(JSON.stringify(value));
+    }
+    this.cache.set(key, valToStore);
+  }
+}
+
+const offerCache = new BoundedCache<any>(50);
+const articleCache = new BoundedCache<string>(50);
+
 /**
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  const cacheKey = `${packageType}-${basePrice}`;
+  const cachedOffer = offerCache.get(cacheKey);
+  if (cachedOffer !== undefined) {
+    return cachedOffer;
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -66,7 +103,9 @@ Return JSON with:
     );
 
     const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const parsedContent = JSON.parse(content || '{}');
+    offerCache.set(cacheKey, parsedContent);
+    return parsedContent;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
@@ -77,6 +116,11 @@ Return JSON with:
  * Generate blog article with Perplexity AI
  */
 export async function generateBlogArticle(topic: string): Promise<string> {
+  const cachedArticle = articleCache.get(topic);
+  if (cachedArticle !== undefined) {
+    return cachedArticle;
+  }
+
   try {
     const response = await axios.post<PerplexityResponse>(
       PERPLEXITY_API_URL,
@@ -98,7 +142,9 @@ export async function generateBlogArticle(topic: string): Promise<string> {
       }
     );
 
-    return response.data.choices[0]?.message.content || '';
+    const content = response.data.choices[0]?.message.content || '';
+    articleCache.set(topic, content);
+    return content;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate article');
