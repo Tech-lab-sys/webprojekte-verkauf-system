@@ -81,13 +81,14 @@ function App() {
               </h3>
 
               {/* Website Type Selector */}
-              <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
+              <div className="mb-8" role="group" aria-labelledby="website-type-label">
+                <label id="website-type-label" className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
                 <div className="grid grid-cols-3 gap-4">
                   {(['AFFILIATE', 'AI_BLOG', 'BUSINESS'] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setWebsiteType(type)}
+                      aria-pressed={websiteType === type}
                       className={`py-4 px-6 rounded-2xl font-semibold transition-all duration-300 ${
                         websiteType === type
                           ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-purple-500/50 scale-105'
@@ -104,8 +105,9 @@ function App() {
 
               {/* Niche Input */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
+                <label htmlFor="niche" className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
                 <input
+                  id="niche"
                   type="text"
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
@@ -118,6 +120,7 @@ function App() {
               <button
                 onClick={handleGenerateOffer}
                 disabled={loading}
+                aria-busy={loading}
                 className="w-full py-5 rounded-2xl bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-lg transition-all duration-300 shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/75 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
@@ -136,7 +139,7 @@ function App() {
 
             {/* Results Section */}
             {offer && (
-              <div className="mt-8 backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl animate-fadeIn">
+              <div aria-live="polite" className="mt-8 backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl animate-fadeIn">
                 <h4 className="text-2xl font-bold mb-6 bg-gradient-to-r from-green-300 to-cyan-300 bg-clip-text text-transparent">
                   ✅ Dein Angebot ist fertig!
                 </h4>

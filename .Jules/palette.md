@@ -1,0 +1,3 @@
+## 2023-10-27 - [A11y Pattern: Form Elements & Dynamic Content]
+**Learning:** React state-driven UIs (like the Offer Generator) often lack intrinsic accessibility attributes because they rely entirely on visual cues. It is crucial to manually wire up state to accessibility attributes: linking text inputs to labels (`id` / `htmlFor`), tracking custom toggle buttons (`aria-pressed`), marking async boundaries (`aria-busy`), and ensuring dynamically rendered content announces itself to screen readers (`aria-live="polite"`).
+**Action:** Always verify that interactive custom elements (`div`/`button` used as selectors) have appropriate ARIA states matching their React state, and that asynchronous results are wrapped in an `aria-live` region.
