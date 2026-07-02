@@ -1,0 +1,3 @@
+## 2025-07-02 - Form Accessibility Improvement
+**Learning:** Added semantic ARIA labels, focus bindings, and states (`aria-pressed`, `aria-busy`) to custom toggle buttons and submit buttons which were previously completely unlinked to labels, heavily improving screen reader support. Toggle buttons require `role="group"` and `aria-pressed` for parity with radio buttons.
+**Action:** When implementing custom button-based selects (e.g. `grid grid-cols-3` toggle choices), always map a label via `aria-labelledby`, add `role="group"`, and set `aria-pressed` based on the selected state. Ensure submit buttons have `aria-busy` when spinning and hide decorative SVG loading icons with `aria-hidden="true"`.
