@@ -1,0 +1,3 @@
+## 2025-02-13 - [LLM API String Caching]
+**Learning:** When implementing bounded caching for external LLM API calls, caching the raw string response directly is more performant than caching a stringified version of the parsed object, as it avoids redundant stringify/parse cycles and implicitly protects against downstream object mutations since a new object is parsed on every hit. Furthermore, when evicting items from a cache `Map`, checking if the `firstKey` is `!== undefined` is necessary in strict TypeScript mode.
+**Action:** When creating in-memory caches for string-based external APIs (like LLM outputs), store the raw response string and parse on retrieval. Always include undefined checks when popping from generic `Map` iterators.
