@@ -1,0 +1,3 @@
+## 2024-05-18 - Bounded Caching for External LLM APIs
+**Learning:** Interacting with external LLM APIs (like Perplexity) without caching can cause performance bottlenecks. Unbounded caches lead to memory leaks. Furthermore, caching parsed objects forces redundant deep copies; caching raw strings and parsing on a hit is more efficient. In TypeScript strict mode, Map eviction using `map.keys().next().value` requires explicitly checking against `undefined` before `map.delete()`.
+**Action:** Implement bounded FIFO caching using Maps for LLM API responses. Store raw string responses directly. During eviction, use `const firstKey = cache.keys().next().value; if (firstKey !== undefined) cache.delete(firstKey);` to satisfy strict mode.
