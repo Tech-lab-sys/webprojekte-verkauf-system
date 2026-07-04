@@ -82,12 +82,13 @@ function App() {
 
               {/* Website Type Selector */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
-                <div className="grid grid-cols-3 gap-4">
+                <label id="website-type-label" className="block text-sm font-semibold text-gray-300 mb-4">Website-Typ</label>
+                <div role="group" aria-labelledby="website-type-label" className="grid grid-cols-3 gap-4">
                   {(['AFFILIATE', 'AI_BLOG', 'BUSINESS'] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setWebsiteType(type)}
+                      aria-pressed={websiteType === type}
                       className={`py-4 px-6 rounded-2xl font-semibold transition-all duration-300 ${
                         websiteType === type
                           ? 'bg-gradient-to-r from-cyan-500 to-purple-500 text-white shadow-lg shadow-purple-500/50 scale-105'
@@ -104,8 +105,9 @@ function App() {
 
               {/* Niche Input */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
+                <label htmlFor="niche-input" className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
                 <input
+                  id="niche-input"
                   type="text"
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
