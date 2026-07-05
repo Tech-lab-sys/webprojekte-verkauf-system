@@ -3,6 +3,10 @@ import axios from 'axios';
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
 
+// Cache for Perplexity API responses to reduce latency and API calls
+const offerCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 100;
+
 export interface PerplexityMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
@@ -27,6 +31,18 @@ export interface PerplexityResponse {
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  const cacheKey = `${packageType}-${basePrice}`;
+  if (offerCache.has(cacheKey)) {
+    const cachedResponse = offerCache.get(cacheKey);
+    if (cachedResponse) {
+      try {
+        return JSON.parse(cachedResponse);
+      } catch (e) {
+        offerCache.delete(cacheKey);
+      }
+    }
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -65,8 +81,21 @@ Return JSON with:
       }
     );
 
-    const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const content = response.data.choices[0]?.message.content || '{}';
+
+    // Parse first to validate JSON format before caching
+    const parsed = JSON.parse(content);
+
+    // Add to bounded Map cache
+    if (offerCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = offerCache.keys().next().value;
+      if (firstKey !== undefined) {
+        offerCache.delete(firstKey);
+      }
+    }
+    offerCache.set(cacheKey, content);
+
+    return parsed;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
