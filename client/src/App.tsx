@@ -104,12 +104,16 @@ function App() {
 
               {/* Niche Input */}
               <div className="mb-8">
-                <label className="block text-sm font-semibold text-gray-300 mb-4">Nische</label>
+                <label htmlFor="niche" className="block text-sm font-semibold text-gray-300 mb-4">
+                  Nische <span className="text-red-500" aria-hidden="true">*</span>
+                </label>
                 <input
+                  id="niche"
                   type="text"
                   value={niche}
                   onChange={(e) => setNiche(e.target.value)}
                   placeholder="z.B. Fitness, Reisen, Technologie..."
+                  aria-required="true"
                   className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300"
                 />
               </div>
