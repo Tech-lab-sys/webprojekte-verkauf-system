@@ -26,6 +26,21 @@ export interface PerplexityResponse {
 /**
  * Generate offer with Perplexity AI
  */
+// Bounded cache to avoid memory leaks while caching LLM responses
+const CACHE_LIMIT = 100;
+const llmCache = new Map<string, string>();
+
+function setCache(key: string, value: string) {
+  if (llmCache.size >= CACHE_LIMIT) {
+    // Evict oldest (FIFO)
+    const oldestKey = llmCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      llmCache.delete(oldestKey);
+    }
+  }
+  llmCache.set(key, value);
+}
+
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
@@ -38,6 +53,18 @@ Return JSON with:
   "discountPercent": 40-80,
   "urgencyText": "limited time offer text"
 }`;
+
+  // Cache key based on input parameters
+  const cacheKey = `offer:${packageType}:${basePrice}`;
+  const cachedResponse = llmCache.get(cacheKey);
+  if (cachedResponse) {
+    try {
+      // ⚡ Bolt: Using cache to avoid expensive/slow duplicate Perplexity API calls
+      return JSON.parse(cachedResponse);
+    } catch (e) {
+      // Invalid JSON in cache somehow, fall through to fetch
+    }
+  }
 
   try {
     const response = await axios.post<PerplexityResponse>(
@@ -66,7 +93,13 @@ Return JSON with:
     );
 
     const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    if (content) {
+      // Validate JSON before caching
+      JSON.parse(content);
+      setCache(cacheKey, content);
+      return JSON.parse(content);
+    }
+    return {};
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
@@ -77,6 +110,13 @@ Return JSON with:
  * Generate blog article with Perplexity AI
  */
 export async function generateBlogArticle(topic: string): Promise<string> {
+  const cacheKey = `blog:${topic}`;
+  const cachedResponse = llmCache.get(cacheKey);
+  if (cachedResponse) {
+    // ⚡ Bolt: Using cache to avoid expensive/slow duplicate Perplexity API calls
+    return cachedResponse;
+  }
+
   try {
     const response = await axios.post<PerplexityResponse>(
       PERPLEXITY_API_URL,
@@ -98,7 +138,11 @@ export async function generateBlogArticle(topic: string): Promise<string> {
       }
     );
 
-    return response.data.choices[0]?.message.content || '';
+    const content = response.data.choices[0]?.message.content || '';
+    if (content) {
+      setCache(cacheKey, content);
+    }
+    return content;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate article');
