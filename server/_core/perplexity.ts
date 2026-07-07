@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
-const PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions';
+const PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions";
 
 export interface PerplexityMessage {
-  role: 'system' | 'user' | 'assistant';
+  role: "system" | "user" | "assistant";
   content: string;
 }
 
@@ -23,10 +23,22 @@ export interface PerplexityResponse {
   };
 }
 
+// Bounded cache to avoid duplicate expensive API calls (Bolt performance optimization)
+const offerCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 100;
+
 /**
  * Generate offer with Perplexity AI
  */
-export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+export async function generateOffer(
+  packageType: string,
+  basePrice: number,
+): Promise<any> {
+  const cacheKey = `${packageType}:${basePrice}`;
+  if (offerCache.has(cacheKey)) {
+    return JSON.parse(offerCache.get(cacheKey)!);
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -43,33 +55,45 @@ Return JSON with:
     const response = await axios.post<PerplexityResponse>(
       PERPLEXITY_API_URL,
       {
-        model: 'llama-3.1-sonar-small-128k-online',
+        model: "llama-3.1-sonar-small-128k-online",
         messages: [
           {
-            role: 'system',
-            content: 'You are a sales copywriter. Return ONLY valid JSON.'
+            role: "system",
+            content: "You are a sales copywriter. Return ONLY valid JSON.",
           },
           {
-            role: 'user',
-            content: prompt
-          }
+            role: "user",
+            content: prompt,
+          },
         ],
         temperature: 0.7,
-        max_tokens: 500
+        max_tokens: 500,
       },
       {
         headers: {
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
+          Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
     );
 
     const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const parsed = JSON.parse(content || "{}");
+
+    // Add raw string to bounded cache to avoid parsing overhead until hit
+    if (offerCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = offerCache.keys().next().value;
+      if (firstKey !== undefined) {
+        offerCache.delete(firstKey);
+      }
+    }
+    // Only cache if parsing was successful to prevent cache poisoning
+    offerCache.set(cacheKey, JSON.stringify(parsed));
+
+    return parsed;
   } catch (error) {
-    console.error('Perplexity API error:', error);
-    throw new Error('Failed to generate offer');
+    console.error("Perplexity API error:", error);
+    throw new Error("Failed to generate offer");
   }
 }
 
@@ -81,26 +105,26 @@ export async function generateBlogArticle(topic: string): Promise<string> {
     const response = await axios.post<PerplexityResponse>(
       PERPLEXITY_API_URL,
       {
-        model: 'llama-3.1-sonar-large-128k-online',
+        model: "llama-3.1-sonar-large-128k-online",
         messages: [
           {
-            role: 'user',
-            content: `Write a 500-word blog article about: ${topic}`
-          }
+            role: "user",
+            content: `Write a 500-word blog article about: ${topic}`,
+          },
         ],
-        temperature: 0.8
+        temperature: 0.8,
       },
       {
         headers: {
-          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
+          Authorization: `Bearer ${PERPLEXITY_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      },
     );
 
-    return response.data.choices[0]?.message.content || '';
+    return response.data.choices[0]?.message.content || "";
   } catch (error) {
-    console.error('Perplexity API error:', error);
-    throw new Error('Failed to generate article');
+    console.error("Perplexity API error:", error);
+    throw new Error("Failed to generate article");
   }
 }
