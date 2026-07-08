@@ -1,0 +1,3 @@
+## 2025-07-08 - Caching External LLM API Responses
+**Learning:** When interacting with external LLM APIs (like Perplexity), we need bounded caching to prevent performance bottlenecks and memory leaks. Caching the raw string response directly avoids deep copy overhead, and we must parse it upon a cache hit. We must also parse/validate the string first before adding it to the cache to prevent cache poisoning from invalid LLM responses.
+**Action:** Implement a bounded FIFO Map cache (e.g., maximum size 100). Explicitly check if the key retrieved via `map.keys().next().value` is not `undefined` before calling `map.delete()` to avoid TypeScript type-checking errors.
