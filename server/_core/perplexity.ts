@@ -23,10 +23,26 @@ export interface PerplexityResponse {
   };
 }
 
+const offerCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 100;
+
 /**
  * Generate offer with Perplexity AI
  */
 export async function generateOffer(packageType: string, basePrice: number): Promise<any> {
+  const cacheKey = `${packageType}-${basePrice}`;
+  if (offerCache.has(cacheKey)) {
+    const cachedResponse = offerCache.get(cacheKey);
+    if (cachedResponse) {
+      try {
+        return JSON.parse(cachedResponse);
+      } catch (error) {
+        // Fallback to API if cache parsing fails
+        offerCache.delete(cacheKey);
+      }
+    }
+  }
+
   const prompt = `Generate a sales offer for a ${packageType} website package.
 Base price: ${basePrice}€
 
@@ -65,8 +81,19 @@ Return JSON with:
       }
     );
 
-    const content = response.data.choices[0]?.message.content;
-    return JSON.parse(content || '{}');
+    const content = response.data.choices[0]?.message.content || '{}';
+    const parsedData = JSON.parse(content); // Validate JSON
+
+    // Update cache
+    offerCache.set(cacheKey, content);
+    if (offerCache.size > MAX_CACHE_SIZE) {
+      const firstKey = offerCache.keys().next().value;
+      if (firstKey !== undefined) {
+        offerCache.delete(firstKey);
+      }
+    }
+
+    return parsedData;
   } catch (error) {
     console.error('Perplexity API error:', error);
     throw new Error('Failed to generate offer');
